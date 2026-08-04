@@ -1,0 +1,270 @@
+/* Thistle & Timber Foundation — shared site styles
+   Palette + type from resources/Org & Communications style guide (OneDrive). */
+
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --cream:      #F5F0E4;
+  --cream-2:    #EFE8D6;
+  --rust:       #8C4A2B;
+  --sage:       #6B7A5C;
+  --gold:       #E8B23D;
+  --purple:     #9B5FA8;
+  --bark:       #4A2E1A;
+  --blue:       #3B5FA5;
+  --leaf:       #B8C4A0;
+  --ink:        #362A1E;
+  --ink-soft:   #5B4E3F;
+  --line:       #DCD2B8;
+  --white:      #FFFDF8;
+
+  --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --sans:  'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --label: 'Jost', 'Futura', var(--sans);
+
+  --max: 1120px;
+  --radius: 14px;
+}
+
+/* Serif headline font: Sanchez isn't on Google Fonts' fast CDN list this build,
+   so we lean on a slab-serif system stack that reads the same "vintage woodtype" way. */
+@font-face{
+  font-family:'Sanchez Fallback';
+  src: local('Sanchez'), local('Museo Slab'), local('Rockwell');
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{
+  margin:0;
+  background:var(--cream);
+  color:var(--ink);
+  font-family:var(--sans);
+  line-height:1.6;
+  font-size:17px;
+}
+img{ max-width:100%; display:block; }
+a{ color:var(--rust); }
+h1,h2,h3,h4{
+  font-family:'Sanchez Fallback', var(--serif);
+  color:var(--rust);
+  font-weight:700;
+  line-height:1.15;
+  letter-spacing:0.01em;
+  margin:0 0 0.5em;
+}
+h1{ font-size:clamp(2.1rem, 4.5vw, 3.4rem); }
+h2{ font-size:clamp(1.6rem, 3vw, 2.3rem); }
+h3{ font-size:1.3rem; }
+p{ margin:0 0 1em; max-width:68ch; }
+.container{ max-width:var(--max); margin:0 auto; padding:0 24px; }
+
+.eyebrow{
+  font-family:var(--label);
+  font-size:0.78rem;
+  font-weight:500;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--sage);
+  margin:0 0 0.6em;
+  display:block;
+}
+
+/* ---------- Header ---------- */
+.site-header{
+  position:sticky; top:0; z-index:50;
+  background:rgba(245,240,228,0.92);
+  backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);
+}
+.site-header .container{
+  display:flex; align-items:center; justify-content:space-between;
+  padding-top:12px; padding-bottom:12px; gap:20px;
+}
+.brand{ display:flex; align-items:center; gap:12px; text-decoration:none; flex-shrink:0; }
+.brand .logo-crop{
+  width:52px; height:52px; border-radius:50%;
+  overflow:hidden; position:relative; flex-shrink:0;
+  background:var(--cream);
+}
+.brand .logo-crop img{
+  position:absolute; top:0; left:-9.3px;
+  height:100%; width:auto; max-width:none;
+}
+.brand-word{ font-family:'Sanchez Fallback', var(--serif); font-weight:700; color:var(--rust); font-size:1.15rem; line-height:1.1; }
+.brand-word small{ display:block; font-family:var(--label); font-size:0.6rem; letter-spacing:0.16em; color:var(--sage); font-weight:500; }
+
+nav.primary-nav{ display:flex; gap:2px; flex-wrap:wrap; }
+nav.primary-nav a{
+  font-family:var(--label); font-size:0.86rem; font-weight:500;
+  letter-spacing:0.04em;
+  color:var(--ink-soft); text-decoration:none;
+  padding:10px 14px; border-radius:8px;
+}
+nav.primary-nav a:hover{ background:var(--cream-2); color:var(--rust); }
+nav.primary-nav a.current{ color:var(--rust); font-weight:600; }
+.nav-cta{
+  background:var(--rust) !important; color:var(--white) !important;
+  padding:10px 18px !important; border-radius:999px !important;
+}
+.nav-cta:hover{ background:var(--bark) !important; }
+
+.nav-toggle{ display:none; }
+
+@media (max-width: 880px){
+  nav.primary-nav{
+    display:none; position:absolute; top:100%; left:0; right:0;
+    background:var(--cream); border-bottom:1px solid var(--line);
+    flex-direction:column; padding:8px 24px 16px;
+  }
+  nav.primary-nav.open{ display:flex; }
+  .nav-toggle{
+    display:inline-flex; align-items:center; gap:8px;
+    background:none; border:1px solid var(--rust); color:var(--rust);
+    font-family:var(--label); font-size:0.8rem; letter-spacing:0.06em;
+    padding:8px 14px; border-radius:999px; cursor:pointer;
+  }
+}
+
+/* ---------- Hero ---------- */
+.hero{
+  position:relative; overflow:hidden;
+  padding:64px 0 56px;
+  border-bottom:1px solid var(--line);
+}
+.hero.h-restore{ background:linear-gradient(180deg,#EEF0E4,var(--cream)); }
+.hero.h-learn{   background:linear-gradient(180deg,#F7EAD2,var(--cream)); }
+.hero.h-visit{   background:linear-gradient(180deg,#E9EEF5,var(--cream)); }
+.hero.h-give{    background:linear-gradient(180deg,#F3E6EF,var(--cream)); }
+.hero.h-about{   background:linear-gradient(180deg,#F0E7D8,var(--cream)); }
+.hero.h-blog{    background:linear-gradient(180deg,#F0E7F5,var(--cream)); }
+.hero-motif{
+  position:absolute; inset:auto -5% -40% auto; width:60%; max-width:640px;
+  opacity:0.5; pointer-events:none;
+}
+.hero-inner{ position:relative; z-index:1; max-width:760px; }
+.hero .tagline{ font-size:1.15rem; color:var(--ink-soft); max-width:56ch; }
+.hero-actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top:20px; }
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--label); font-size:0.88rem; font-weight:500; letter-spacing:0.03em;
+  text-decoration:none; padding:12px 22px; border-radius:999px;
+  border:1.5px solid var(--rust); color:var(--rust); background:transparent;
+  transition:all .15s ease; cursor:pointer;
+}
+.btn:hover{ background:var(--rust); color:var(--white); }
+.btn.primary{ background:var(--rust); color:var(--white); }
+.btn.primary:hover{ background:var(--bark); border-color:var(--bark); }
+.btn.gold{ border-color:var(--gold); color:var(--bark); background:var(--gold); }
+.btn.gold:hover{ background:#cf9a2d; }
+.btn.ghost{ border-color:var(--ink-soft); color:var(--ink-soft); }
+
+/* ---------- Sections & cards ---------- */
+section{ padding:56px 0; }
+section.tight{ padding:36px 0; }
+.section-head{ max-width:640px; margin-bottom:32px; }
+.band{ background:var(--white); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.band-dark{ background:var(--bark); color:var(--cream); }
+.band-dark h2, .band-dark h3, .band-dark .eyebrow{ color:var(--cream); }
+.band-dark .eyebrow{ color:var(--leaf); }
+.band-dark p{ color:#E4DAC6; }
+.band-sage{ background:var(--sage); color:var(--white); }
+.band-sage h2,.band-sage h3{ color:var(--white); }
+.band-sage .eyebrow{ color:var(--cream); }
+
+.grid{ display:grid; gap:24px; }
+.grid-3{ grid-template-columns:repeat(3,1fr); }
+.grid-2{ grid-template-columns:repeat(2,1fr); }
+@media (max-width:880px){ .grid-3{ grid-template-columns:1fr; } .grid-2{ grid-template-columns:1fr; } }
+
+.card{
+  background:var(--white); border:1px solid var(--line); border-radius:var(--radius);
+  padding:26px; height:100%;
+}
+.card.pillar{ border-top:4px solid var(--sage); }
+.card.pillar.gold{ border-top-color:var(--gold); }
+.card.pillar.purple{ border-top-color:var(--purple); }
+.card .card-icon{ width:40px; height:40px; margin-bottom:14px; }
+
+.pill{
+  display:inline-block; font-family:var(--label); font-size:0.72rem; font-weight:500;
+  letter-spacing:0.08em; text-transform:uppercase; padding:4px 10px; border-radius:999px;
+  margin:0 6px 6px 0;
+}
+.pill.dev{ background:#F3E3C4; color:#7A5A17; }
+.pill.draft{ background:#EADFF0; color:#6B3E80; border:1px dashed #C9A9DC; }
+.pill.live{ background:#E1E8D9; color:#425632; }
+
+hr.rule{ border:none; border-top:1px solid var(--line); margin:40px 0; }
+
+/* Definition-style row list (forms, links, facts) */
+.fact-list{ list-style:none; margin:0; padding:0; }
+.fact-list li{
+  display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--line);
+  font-size:0.98rem;
+}
+.fact-list li:last-child{ border-bottom:none; }
+.fact-list .k{ font-family:var(--label); font-size:0.78rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--sage); flex:0 0 160px; padding-top:2px; }
+
+blockquote{
+  border-left:3px solid var(--gold); margin:0 0 1em; padding:4px 0 4px 20px;
+  font-family:'Sanchez Fallback', var(--serif); font-size:1.15rem; color:var(--bark); font-style:italic;
+}
+
+table.simple{ width:100%; border-collapse:collapse; font-size:0.94rem; }
+table.simple th, table.simple td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+table.simple th{ font-family:var(--label); font-size:0.75rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--sage); }
+
+/* ---------- Partner logo marquee ---------- */
+.logo-marquee{
+  overflow:hidden; position:relative; margin-top:8px;
+  -webkit-mask-image:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);
+  mask-image:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);
+}
+.logo-marquee-track{
+  display:flex; align-items:center; gap:28px; width:max-content;
+  animation:logo-scroll 32s linear infinite;
+}
+.logo-marquee:hover .logo-marquee-track{ animation-play-state:paused; }
+.logo-marquee-track img{ height:44px; width:auto; }
+.logo-tile{
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  height:64px; width:180px; flex-shrink:0; padding:0 12px;
+  border:1px dashed #C9A9DC; border-radius:10px; background:var(--white);
+  font-family:var(--label); font-size:0.7rem; font-weight:500; letter-spacing:0.06em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+@keyframes logo-scroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+@media (prefers-reduced-motion: reduce){
+  .logo-marquee-track{ animation:none; flex-wrap:wrap; }
+}
+
+/* ---------- Footer ---------- */
+footer.site-footer{ background:var(--bark); color:#E4DAC6; padding:48px 0 28px; }
+footer.site-footer a{ color:#F3E6C9; }
+.footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:32px; }
+@media (max-width:880px){ .footer-grid{ grid-template-columns:1fr 1fr; } }
+footer.site-footer h4{ font-family:var(--label); color:var(--gold); font-size:0.8rem; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px; }
+footer.site-footer ul{ list-style:none; margin:0; padding:0; }
+footer.site-footer li{ margin-bottom:8px; font-size:0.92rem; }
+.footer-bottom{
+  margin-top:36px; padding-top:20px; border-top:1px solid rgba(228,218,198,0.2);
+  display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  font-size:0.8rem; color:#B9AC91;
+}
+.footer-logo{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.footer-logo .logo-crop{ width:46px; height:46px; border-radius:50%; overflow:hidden; position:relative; background:var(--cream); }
+.footer-logo .logo-crop img{ position:absolute; top:0; left:-8.2px; height:100%; width:auto; max-width:none; }
+
+/* ---------- Utility ---------- */
+.center{ text-align:center; margin-left:auto; margin-right:auto; }
+.stack-sm > * + *{ margin-top:12px; }
+.callout{
+  background:var(--cream-2); border:1px solid var(--line); border-radius:var(--radius);
+  padding:22px 26px;
+}
+.callout.note{ border-left:4px solid var(--blue); }
+.two-col{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:center; }
+@media (max-width:880px){ .two-col{ grid-template-columns:1fr; } }
