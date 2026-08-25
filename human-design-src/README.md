@@ -1,8 +1,9 @@
-# Human Design + Brotherhood Circle app
+# Born Free Men — Human Design + Brotherhood Circle app
 
-Source for the `/human-design/` tool on the Thistle & Timber Foundation site:
-a Human Design + astrology chart calculator (real ephemeris, not lookup
-tables) plus a "Brotherhood Circle" tool for group chart analysis.
+A Human Design + astrology chart calculator (real ephemeris, not lookup
+tables) plus a "Brotherhood Circle" tool for group chart analysis, branded
+for Born Free Men (palette/type pulled from a brand audit of
+bornfreemethod.com — see `src/styles.css` for the sourcing note).
 
 ## Develop
 

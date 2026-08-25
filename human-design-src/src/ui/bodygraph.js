@@ -69,14 +69,14 @@ const LAYOUT = {
 };
 
 const CENTER_FILL = {
-  defined: "#8C4A2B",
-  undefined: "#FFFDF8",
+  defined: "#A63C06", // ember — the brand's single "on" color
+  undefined: "#2A2E1D", // moss-dk — quiet/receded against the moss ground
 };
-const CENTER_STROKE = "#4A2E1A";
+const CENTER_STROKE = "rgba(255,255,255,.28)";
 
-const COLOR_PERSONALITY = "#362A1E"; // ink — conscious activations
-const COLOR_DESIGN = "#B23A2E"; // red — unconscious activations
-const COLOR_BOTH = "#9B5FA8"; // purple — activated on both sides
+const COLOR_PERSONALITY = "#FFFFFF"; // white — conscious activations
+const COLOR_DESIGN = "#C1544C"; // oxblood, lightened for on-dark legibility — unconscious activations
+const COLOR_BOTH = "#E4682C"; // ember-lt — activated on both sides
 
 function lerp([x1, y1], [x2, y2], t) {
   return [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t];
@@ -157,10 +157,12 @@ export function renderBodyGraphSvg(chart, { title = "" } = {}) {
       const gate = Number(gateStr);
       const active = activeGateSet.has(gate);
       const side = active ? gateSide(chart, gate) : null;
-      const color = active ? sideColor(side) : "#C9BFA6";
+      const color = active ? sideColor(side) : "#5A6140";
       const r = active ? 8 : 5.5;
-      const label = `<text x="${p.x}" y="${p.y}" font-size="7.5" font-family="Inter, sans-serif" font-weight="${active ? 700 : 400}" fill="${active ? "#FFFDF8" : "#7A6E58"}" text-anchor="middle" dominant-baseline="central">${gate}</text>`;
-      return `<g><circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${color}" stroke="#FFFDF8" stroke-width="0.75" /><title>Gate ${gate}${side ? " (" + side + ")" : ""}</title>${active ? label : ""}</g>`;
+      const strokeColor = active ? "rgba(255,255,255,.55)" : "rgba(255,255,255,.18)";
+      const labelColor = side === "personality" ? "#23251D" : "#FFFFFF";
+      const label = `<text x="${p.x}" y="${p.y}" font-size="7.5" font-family="'IBM Plex Mono', monospace" font-weight="600" fill="${labelColor}" text-anchor="middle" dominant-baseline="central">${gate}</text>`;
+      return `<g><circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${color}" stroke="${strokeColor}" stroke-width="0.75" /><title>Gate ${gate}${side ? " (" + side + ")" : ""}</title>${active ? label : ""}</g>`;
     })
     .join("\n");
 

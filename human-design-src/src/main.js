@@ -68,7 +68,7 @@ function layout(innerHtml, { eyebrow = "", title = "" } = {}) {
     <header class="site-header">
       <div class="container">
         <a href="#/" class="brand">
-          <span class="brand-word">Thistle &amp; Timber<small>HUMAN DESIGN</small></span>
+          <span class="brand-word">Born Free Men<small>HUMAN DESIGN</small></span>
         </a>
         <nav class="app-nav">
           <a href="#/">My People</a>
@@ -89,7 +89,7 @@ function layout(innerHtml, { eyebrow = "", title = "" } = {}) {
     <footer class="app-footer">
       <div class="container">
         <span>Human Design charts are calculated in your browser from real astronomical ephemeris data. Nothing you enter is stored anywhere but this device.</span>
-        <span>A tool from <a href="/">Thistle &amp; Timber Foundation</a></span>
+        <span>Born Free Men</span>
       </div>
     </footer>
   `;
