@@ -82,6 +82,53 @@ function lerp([x1, y1], [x2, y2], t) {
   return [x1 + (x2 - x1) * t, y1 + (y2 - y1) * t];
 }
 
+// ── Decorative background: a soft body silhouette + nested "wiring" loops,
+// sitting behind the centers/channels so the graph reads as a figure rather
+// than shapes floating in space (matching the look of a printed report).
+// Hand-drawn, not traced from any proprietary artwork.
+const SILHOUETTE_POINTS = [
+  [230, 14], [272, 60], [300, 118], [360, 200], [430, 400], [350, 560],
+  [300, 650], [260, 686], [230, 694], [200, 686], [160, 650], [110, 560],
+  [30, 400], [100, 200], [160, 118], [188, 60],
+];
+
+function mid([x1, y1], [x2, y2]) {
+  return [(x1 + x2) / 2, (y1 + y2) / 2];
+}
+
+// Smooth closed path through a ring of points, rounding every corner.
+function smoothClosedPath(points) {
+  const n = points.length;
+  const start = mid(points[n - 1], points[0]);
+  let d = `M ${start[0]},${start[1]} `;
+  for (let i = 0; i < n; i++) {
+    const p = points[i];
+    const next = points[(i + 1) % n];
+    const m = mid(p, next);
+    d += `Q ${p[0]},${p[1]} ${m[0]},${m[1]} `;
+  }
+  return d + "Z";
+}
+
+const SILHOUETTE_PATH = smoothClosedPath(SILHOUETTE_POINTS);
+
+const WIRING_CENTER = [230, 380];
+const WIRING_RADII = [
+  [60, 69],
+  [110, 126],
+  [160, 184],
+  [205, 236],
+  [245, 278],
+];
+
+function renderBackgroundWiring() {
+  const ellipses = WIRING_RADII.map(
+    ([rx, ry]) =>
+      `<ellipse cx="${WIRING_CENTER[0]}" cy="${WIRING_CENTER[1]}" rx="${rx}" ry="${ry}" fill="none" stroke="rgba(255,255,255,.11)" stroke-width="1.25" />`
+  ).join("\n");
+  return `<path d="${SILHOUETTE_PATH}" fill="rgba(255,255,255,.09)" stroke="rgba(255,255,255,.14)" stroke-width="1.5" />\n${ellipses}`;
+}
+
 function gatePointsForCenter(centerName) {
   const gates = [...CENTERS[centerName].gates].sort((a, b) => a - b);
   const [p1, p2] = LAYOUT[centerName].labelEdge;
@@ -167,6 +214,7 @@ export function renderBodyGraphSvg(chart, { title = "" } = {}) {
     .join("\n");
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${title ? title + " " : ""}Human Design BodyGraph">
+    ${renderBackgroundWiring()}
     ${channelLines}
     ${centerShapes}
     ${gateDots}
