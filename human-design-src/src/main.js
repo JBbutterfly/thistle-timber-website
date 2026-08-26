@@ -476,11 +476,18 @@ function renderPersonView(id) {
     </div>
     ${person.birth.unknownTime ? `<div class="callout warn"><p style="margin-bottom:0">Birth time unknown — Moon placement, Ascendant, and possibly Authority should be treated as approximate.</p></div>` : ""}
 
-    <div class="grid grid-4" style="margin:20px 0">
-      <div class="card"><span class="eyebrow">Type</span><h3>${chart.type}</h3><span class="disclaimer">${chart.typeInfo.population} of people</span></div>
-      <div class="card"><span class="eyebrow">Strategy</span><h3>${chart.typeInfo.strategy}</h3></div>
-      <div class="card"><span class="eyebrow">Authority</span><h3>${chart.authority.name}</h3></div>
-      <div class="card"><span class="eyebrow">Profile</span><h3>${chart.profile}</h3><span class="disclaimer">${esc(chart.incarnationCross.profileName)}</span></div>
+    <div class="card" style="margin:20px 0 24px">
+      <span class="eyebrow">Chart Snapshot</span>
+      <div class="grid grid-3" style="margin-bottom:18px">
+        <div><span class="eyebrow">Type</span><h3 style="margin-bottom:2px">${chart.type}</h3><span class="disclaimer">${chart.typeInfo.population} of people</span></div>
+        <div><span class="eyebrow">Strategy</span><h3 style="margin-bottom:0">${chart.typeInfo.strategy}</h3></div>
+        <div><span class="eyebrow">Authority</span><h3 style="margin-bottom:0">${chart.authority.name}</h3></div>
+        <div><span class="eyebrow">Profile</span><h3 style="margin-bottom:2px">${chart.profile}</h3><span class="disclaimer">${esc(chart.incarnationCross.profileName)}</span></div>
+        <div><span class="eyebrow">Definition</span><h3 style="margin-bottom:2px">${chart.definition}</h3><span class="disclaimer">${chart.definitionComponents.length} connected ${chart.definitionComponents.length === 1 ? "group" : "groups"}</span></div>
+        <div><span class="eyebrow">Incarnation Cross</span><h3 style="margin-bottom:0;font-size:1.02rem">${chart.incarnationCross.label}</h3></div>
+      </div>
+      <hr class="rule" style="margin:0 0 16px">
+      <p style="margin-bottom:0">This chart is calculated from ${esc(person.name)}'s exact birth date, time, and place, combined with where the planets sat in the sky at that moment — no two combinations are the same. The BodyGraph below is nine geometric shapes (Centers) connected by lines (Channels), built from gates — the specific activation points at each end. A filled-in Center runs on a fixed, reliable current; a white one is open, meaning it picks up and amplifies whatever energy is around it. Everything on this page breaks down exactly what that means for ${esc(person.name)}.</p>
     </div>
 
     <div class="grid grid-2" style="margin-bottom:20px">
@@ -496,10 +503,7 @@ function renderPersonView(id) {
         <p>${esc(chart.typeInfo.summary)}</p>
         <p><strong>Signature:</strong> ${chart.typeInfo.signature} &nbsp;·&nbsp; <strong>Not-Self Theme:</strong> ${chart.typeInfo.notSelfTheme}</p>
         <p>${esc(chart.authority.guidance)}</p>
-        <hr class="rule" style="margin:16px 0">
-        <p><strong>Definition:</strong> ${chart.definition}</p>
-        <p class="disclaimer">${esc(chart.definitionText)}</p>
-        <p><strong>Incarnation Cross:</strong> ${chart.incarnationCross.label}</p>
+        <p class="disclaimer" style="margin-bottom:0">${esc(chart.definitionText)}</p>
       </div>
     </div>
 
