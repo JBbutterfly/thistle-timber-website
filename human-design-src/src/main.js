@@ -68,7 +68,14 @@ window.addEventListener("hashchange", render);
 // ─────────────────────────────────────────────────────────────────────────
 // Shared chrome
 // ─────────────────────────────────────────────────────────────────────────
+const SYNC_STATUS = {
+  cloud: { label: "🟢 Synced — shared with the circle", cls: "synced" },
+  local: { label: "📴 Local only on this device", cls: "local" },
+  "cloud-error": { label: "⚠️ Cloud sync unavailable — using this device only", cls: "local" },
+};
+
 function layout(innerHtml, { eyebrow = "", title = "" } = {}) {
+  const status = SYNC_STATUS[Storage.syncMode] ?? SYNC_STATUS.local;
   app.innerHTML = `
     <header class="site-header">
       <div class="container">
@@ -79,6 +86,7 @@ function layout(innerHtml, { eyebrow = "", title = "" } = {}) {
           <a href="#/">My People</a>
           <a href="#/person/new">+ New Chart</a>
           <a href="#/circle/new">+ New Circle</a>
+          <span class="sync-pill ${status.cls}" title="Sync status">${status.label}</span>
         </nav>
       </div>
     </header>
@@ -93,7 +101,11 @@ function layout(innerHtml, { eyebrow = "", title = "" } = {}) {
     </section>
     <footer class="app-footer">
       <div class="container">
-        <span>Human Design charts are calculated in your browser from real astronomical ephemeris data. Nothing you enter is stored anywhere but this device.</span>
+        <span>Human Design charts are calculated in your browser from real astronomical ephemeris data. ${
+          Storage.syncMode === "cloud"
+            ? "Birth data is shared with everyone using this Brotherhood Circle app — not sent anywhere else."
+            : "Nothing you enter is stored anywhere but this device."
+        }</span>
         <span>Born Free Men</span>
       </div>
     </footer>
@@ -330,12 +342,8 @@ function renderPersonForm(existing) {
 // ─────────────────────────────────────────────────────────────────────────
 // Person chart view
 // ─────────────────────────────────────────────────────────────────────────
-function renderPersonView(id) {
-  const person = Storage.getPerson(id);
-  if (!person) return renderHome();
-  const { chart, astrology } = getChartFor(person);
+function buildPersonReportHtml(person, { chart, astrology }) {
   const svg = renderBodyGraphSvg(chart, { title: person.name });
-  const otherPeople = Storage.getPeople().filter((p) => p.id !== person.id);
 
   const activePointsTable = (side) => {
     const rows = Object.entries(chart[side])
@@ -465,22 +473,11 @@ function renderPersonView(id) {
     `;
   }
 
-  layout(
-    `
-    <div class="chart-header">
-      <div>
-        <span class="eyebrow">${esc(person.birth.locationLabel)} · ${person.birth.month}/${person.birth.day}/${person.birth.year} ${person.birth.unknownTime ? "(time unknown)" : `${String(person.birth.hour).padStart(2, "0")}:${String(person.birth.minute).padStart(2, "0")}`}</span>
-        <h1>${esc(person.name)}</h1>
-      </div>
-      <div class="card-actions">
-        <a href="#/person/${person.id}/edit" class="btn small">Edit</a>
-        <button class="btn small danger" id="delete-person">Delete</button>
-      </div>
-    </div>
+  return `
     ${person.birth.unknownTime ? `<div class="callout warn"><p style="margin-bottom:0">Birth time unknown — Moon placement, Ascendant, and possibly Authority should be treated as approximate.</p></div>` : ""}
 
     <div class="card" style="margin:20px 0 24px">
-      <span class="eyebrow">Chart Snapshot</span>
+      <span class="eyebrow">${esc(person.name)} — Chart Snapshot</span>
       <div class="grid grid-3" style="margin-bottom:18px">
         <div><span class="eyebrow">Type</span><h3 style="margin-bottom:2px">${chart.type}</h3><span class="disclaimer">${chart.typeInfo.population} of people</span></div>
         <div><span class="eyebrow">Strategy</span><h3 style="margin-bottom:0">${chart.typeInfo.strategy}</h3></div>
@@ -549,6 +546,31 @@ function renderPersonView(id) {
     <span class="eyebrow">Astrology Snapshot</span>
     <h2>Natal Chart</h2>
     ${astrologyHtml}
+    `;
+}
+
+function renderPersonView(id) {
+  const person = Storage.getPerson(id);
+  if (!person) return renderHome();
+  const chartData = getChartFor(person);
+  const otherPeople = Storage.getPeople().filter((p) => p.id !== person.id);
+  const reportHtml = buildPersonReportHtml(person, chartData);
+
+  layout(
+    `
+    <div class="chart-header">
+      <div>
+        <span class="eyebrow">${esc(person.birth.locationLabel)} · ${person.birth.month}/${person.birth.day}/${person.birth.year} ${person.birth.unknownTime ? "(time unknown)" : `${String(person.birth.hour).padStart(2, "0")}:${String(person.birth.minute).padStart(2, "0")}`}</span>
+        <h1>${esc(person.name)}</h1>
+      </div>
+      <div class="card-actions">
+        <button class="btn small" id="download-pdf">Download PDF</button>
+        <a href="#/person/${person.id}/edit" class="btn small">Edit</a>
+        <button class="btn small danger" id="delete-person">Delete</button>
+      </div>
+    </div>
+
+    <div id="report-content">${reportHtml}</div>
 
     <hr class="rule">
     <span class="eyebrow">One-on-One</span>
@@ -579,6 +601,22 @@ function renderPersonView(id) {
   document.getElementById("compare-btn")?.addEventListener("click", () => {
     const otherId = document.getElementById("compare-select").value;
     navigate(`connect/${person.id}/${otherId}`);
+  });
+  document.getElementById("download-pdf")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+    try {
+      const { elementToPdf, safeFilename } = await import("./ui/pdfExport.js");
+      await elementToPdf(document.getElementById("report-content"), `${safeFilename(person.name)}-human-design.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert("Sorry, the PDF didn't generate. Please try again.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   });
 }
 
@@ -807,6 +845,7 @@ function renderCircleView(id) {
         <h1>${esc(circle.name)}</h1>
       </div>
       <div class="card-actions">
+        <button class="btn small" id="download-all-pdfs">Download PDFs for all members</button>
         <a href="#/circle/${circle.id}/edit" class="btn small">Edit membership</a>
         <button class="btn small danger" id="delete-circle">Delete</button>
       </div>
@@ -854,6 +893,27 @@ function renderCircleView(id) {
       navigate("");
     }
   });
+  document.getElementById("download-all-pdfs")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const original = btn.textContent;
+    btn.disabled = true;
+    try {
+      const { offscreenElementToPdf, safeFilename } = await import("./ui/pdfExport.js");
+      for (let i = 0; i < members.length; i++) {
+        const m = members[i];
+        btn.textContent = `Generating ${i + 1}/${members.length}…`;
+        const reportHtml = buildPersonReportHtml(m.person, getChartFor(m.person));
+        await offscreenElementToPdf(reportHtml, `${safeFilename(m.name)}-human-design.pdf`);
+        await new Promise((r) => setTimeout(r, 300)); // give the browser a beat between downloads
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Sorry, one or more PDFs didn't generate. Please try again.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
 }
 
-render();
+Storage.initStorage(render);

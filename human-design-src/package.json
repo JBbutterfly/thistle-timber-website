@@ -10,7 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "astronomy-engine": "^2.1.19"
+    "astronomy-engine": "^2.1.19",
+    "firebase": "^12.4.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1"
   },
   "devDependencies": {
     "vite": "^8.2.2"
