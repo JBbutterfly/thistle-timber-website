@@ -12,9 +12,11 @@
 // listener, so callers never have to await a read.
 // ─────────────────────────────────────────────────────────────────────────
 import { firebaseConfig, isFirebaseConfigured } from "../firebaseConfig.js";
+import { SEED_PEOPLE } from "../data/seedPeople.js";
 
 const PEOPLE_KEY = "tt-hd:people:v1";
 const CIRCLES_KEY = "tt-hd:circles:v1";
+const SEEDED_KEY = "tt-hd:seeded:v1";
 
 export function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -161,6 +163,20 @@ export function getCircle(id) {
   return getCircles().find((c) => c.id === id) ?? null;
 }
 
+// Adds the starter records into local storage, once, on a browser that's
+// never seen them — never touches Firestore. Runs exactly once per browser
+// (tracked by SEEDED_KEY) so deleting a seeded person later actually sticks
+// instead of it reappearing on the next visit.
+function seedLocalPeopleIfNeeded() {
+  if (localStorage.getItem(SEEDED_KEY)) return;
+  localStorage.setItem(SEEDED_KEY, "1");
+  const existingIds = new Set(peopleCache.map((p) => p.id));
+  const missing = SEED_PEOPLE.filter((p) => !existingIds.has(p.id));
+  if (!missing.length) return;
+  peopleCache = [...peopleCache, ...missing];
+  writeLocal(PEOPLE_KEY, peopleCache);
+}
+
 /**
  * Boots storage and calls onChange() every time data is ready or changes
  * (including the first time). Must be called once before the first render.
@@ -168,6 +184,7 @@ export function getCircle(id) {
 export function initStorage(onChange) {
   peopleCache = readLocal(PEOPLE_KEY);
   circlesCache = readLocal(CIRCLES_KEY);
+  seedLocalPeopleIfNeeded();
 
   if (!isFirebaseConfigured) {
     syncMode = "local";
