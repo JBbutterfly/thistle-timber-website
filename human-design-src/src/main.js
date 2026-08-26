@@ -10,6 +10,7 @@ import { CENTER_DESCRIPTIONS, CENTERS, LINE_KEYNOTES, PROFILE_NARRATIVES } from 
 import { CENTER_NARRATIVES } from "./engine/centerNarratives.js";
 import { GATE_DESCRIPTIONS } from "./engine/gateDescriptions.js";
 import { CHANNEL_DESCRIPTIONS } from "./engine/channelDescriptions.js";
+import { computeConnection } from "./engine/connectionEngine.js";
 import {
   computeGroupComposite,
   centerDefinitionTally,
@@ -58,6 +59,7 @@ function render() {
   if (parts[0] === "circle" && parts[1] === "new") return renderCircleForm(null);
   if (parts[0] === "circle" && parts[2] === "edit") return renderCircleForm(Storage.getCircle(parts[1]));
   if (parts[0] === "circle" && parts[1]) return renderCircleView(parts[1]);
+  if (parts[0] === "connect" && parts[1] && parts[2]) return renderConnectionView(parts[1], parts[2]);
   return renderHome();
 }
 
@@ -333,6 +335,7 @@ function renderPersonView(id) {
   if (!person) return renderHome();
   const { chart, astrology } = getChartFor(person);
   const svg = renderBodyGraphSvg(chart, { title: person.name });
+  const otherPeople = Storage.getPeople().filter((p) => p.id !== person.id);
 
   const activePointsTable = (side) => {
     const rows = Object.entries(chart[side])
@@ -546,6 +549,24 @@ function renderPersonView(id) {
     <span class="eyebrow">Astrology Snapshot</span>
     <h2>Natal Chart</h2>
     ${astrologyHtml}
+
+    <hr class="rule">
+    <span class="eyebrow">One-on-One</span>
+    <h2>How ${esc(person.name)} Connects With Someone Else</h2>
+    ${
+      otherPeople.length
+        ? `<div class="card" style="max-width:520px">
+            <p>Pick another saved chart to see the specific channels between the two of you, who carries what center-by-center, and concrete guidance on how each of you can support the other.</p>
+            <div class="field">
+              <label for="compare-select">Compare ${esc(person.name)} with</label>
+              <select id="compare-select">
+                ${otherPeople.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join("")}
+              </select>
+            </div>
+            <button class="btn primary" id="compare-btn">See the connection</button>
+          </div>`
+        : `<p class="disclaimer">Add another chart to see how ${esc(person.name)} connects with them. <a href="#/person/new">+ New Chart</a></p>`
+    }
     `
   );
 
@@ -554,6 +575,109 @@ function renderPersonView(id) {
       Storage.deletePerson(person.id);
       navigate("");
     }
+  });
+  document.getElementById("compare-btn")?.addEventListener("click", () => {
+    const otherId = document.getElementById("compare-select").value;
+    navigate(`connect/${person.id}/${otherId}`);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// One-on-one Connection view
+// ─────────────────────────────────────────────────────────────────────────
+const CONNECTION_KIND_LABEL = {
+  Companionship: "Companionship — you both already carry this on your own",
+  Dominance: "Dominance — one of you carries this, the other doesn't touch it at all",
+  Electromagnetic: "Electromagnetic — neither of you has it alone, but together you complete it",
+  Compromise: "Compromise — you share the exact same half-open gate",
+};
+
+function renderConnectionView(idA, idB) {
+  const personA = Storage.getPerson(idA);
+  const personB = Storage.getPerson(idB);
+  if (!personA || !personB) return renderHome();
+
+  const a = { id: personA.id, name: personA.name, chart: getChartFor(personA).chart };
+  const b = { id: personB.id, name: personB.name, chart: getChartFor(personB).chart };
+  const result = computeConnection(a, b);
+  const conn = result.connections.connections;
+
+  const otherSaved = Storage.getPeople().filter((p) => p.id !== a.id && p.id !== b.id);
+
+  const summaryCard = (m) => `
+    <div class="card person-card" data-nav="#/person/${m.id}">
+      <span class="name">${esc(m.name)}</span>
+      <div><span class="pill type">${esc(m.chart.type)}</span><span class="pill authority">${esc(m.chart.authority.name)}</span><span class="pill profile">${esc(m.chart.profile)}</span></div>
+    </div>`;
+
+  const connectionKindHtml = (kind) => {
+    const items = conn[kind];
+    if (!items.length) return `<p class="disclaimer">None between the two of you.</p>`;
+    return `<ul class="center-list">${items
+      .map((it) => {
+        const dom = it.dominantMember ? ` <span class="disclaimer">(${esc(it.dominantMember)} carries it)</span>` : "";
+        return `<li><span>${it.gates.join("-")} — ${esc(it.name)}${dom}</span></li>`;
+      })
+      .join("")}</ul>`;
+  };
+
+  const centerDynamicsHtml = result.centerDynamics
+    .map((d) => `<li><span><strong>${esc(d.center)}</strong> — ${esc(d.text)}</span></li>`)
+    .join("");
+
+  const otherSwitchHtml = otherSaved.length
+    ? `<div class="field" style="max-width:420px">
+        <label for="swap-select">Or compare ${esc(a.name)} with someone else</label>
+        <select id="swap-select">
+          ${otherSaved.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join("")}
+        </select>
+        <button class="btn small" id="swap-btn" style="margin-top:8px">Switch</button>
+      </div>`
+    : "";
+
+  layout(
+    `
+    <span class="eyebrow">One-on-One Connection</span>
+    <h1>${esc(a.name)} &amp; ${esc(b.name)}</h1>
+    <div class="grid grid-2" style="margin:20px 0">${summaryCard(a)}${summaryCard(b)}</div>
+
+    <div class="grid grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <span class="eyebrow">How ${esc(b.name)} Can Support ${esc(a.name)}</span>
+        <p>${esc(result.supportForA.type)}</p>
+        <p style="margin-bottom:0">${esc(result.supportForA.authority)}</p>
+      </div>
+      <div class="card">
+        <span class="eyebrow">How ${esc(a.name)} Can Support ${esc(b.name)}</span>
+        <p>${esc(result.supportForB.type)}</p>
+        <p style="margin-bottom:0">${esc(result.supportForB.authority)}</p>
+      </div>
+    </div>
+
+    <hr class="rule">
+    <span class="eyebrow">Connection Theory</span>
+    <h2>The Specific Channels Between You</h2>
+    <p>The standard four Human Design connection types, applied to just the two of you.</p>
+    <div class="grid grid-2">
+      <div class="card"><span class="eyebrow">${CONNECTION_KIND_LABEL.Companionship}</span>${connectionKindHtml("Companionship")}</div>
+      <div class="card"><span class="eyebrow">${CONNECTION_KIND_LABEL.Dominance}</span>${connectionKindHtml("Dominance")}</div>
+      <div class="card"><span class="eyebrow">${CONNECTION_KIND_LABEL.Electromagnetic}</span>${connectionKindHtml("Electromagnetic")}</div>
+      <div class="card"><span class="eyebrow">${CONNECTION_KIND_LABEL.Compromise}</span>${connectionKindHtml("Compromise")}</div>
+    </div>
+
+    <hr class="rule">
+    <span class="eyebrow">Center by Center</span>
+    <h2>Who Carries What Between You</h2>
+    <div class="card"><ul class="center-list">${centerDynamicsHtml}</ul></div>
+
+    <hr class="rule">
+    ${otherSwitchHtml}
+    `
+  );
+  bindNavClicks();
+  document.getElementById("swap-btn")?.addEventListener("click", () => {
+    const otherId = document.getElementById("swap-select").value;
+    navigate(`connect/${a.id}/${otherId}`);
   });
 }
 
@@ -666,7 +790,7 @@ function renderCircleView(id) {
         .filter(([, v]) => v.length)
         .map(([k, v]) => `${k} (${v.length})`)
         .join(", ");
-      return `<tr><td>${esc(p.a)} ↔ ${esc(p.b)}</td><td>${counts || "—"}</td></tr>`;
+      return `<tr><td>${esc(p.a)} ↔ ${esc(p.b)}</td><td>${counts || "—"}</td><td><a href="#/connect/${p.aId}/${p.bId}">See connection →</a></td></tr>`;
     })
     .join("");
 
@@ -714,7 +838,7 @@ function renderCircleView(id) {
     <p>For every pair, the standard four Human Design connection types: <strong>Companionship</strong> (both already carry the same channel — easy, shared ground), <strong>Dominance</strong> (one carries a full channel the other doesn't touch at all — a one-way current), <strong>Electromagnetic</strong> (neither has it alone, but together they complete it — real chemistry, sometimes hard to explain), and <strong>Compromise</strong> (both share the exact same half-open gate — a live but never-finished theme between them).</p>
     ${highlights}
     <table class="data" style="margin-top:12px">
-      <thead><tr><th>Pair</th><th>Connections found</th></tr></thead>
+      <thead><tr><th>Pair</th><th>Connections found</th><th></th></tr></thead>
       <tbody>${pairTable}</tbody>
     </table>
 
