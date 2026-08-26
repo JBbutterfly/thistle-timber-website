@@ -150,6 +150,18 @@ export function computeChart(personalityTime, designTime) {
   const { definedCenters, adjacency } = centerGraphAndDefinition(formed);
   const undefinedCenters = CENTER_NAMES.filter((c) => !definedCenters.has(c));
 
+  // For each open center: is it "completely open" (no active gate at all —
+  // no filter whatsoever) or does it carry a "hanging gate" flavor (one or
+  // more active gates present, just not their channel partner)?
+  const openCenterFlavor = {};
+  for (const center of undefinedCenters) {
+    const hangingGates = CENTERS[center].gates.filter((g) => activeGateSet.has(g));
+    openCenterFlavor[center] =
+      hangingGates.length === 0
+        ? { kind: "completely-open", gates: [] }
+        : { kind: "flavored", gates: hangingGates };
+  }
+
   const type = determineType(definedCenters, adjacency);
   const authority = determineAuthority(definedCenters, adjacency);
 
@@ -182,6 +194,7 @@ export function computeChart(personalityTime, designTime) {
     formedChannels: formed,
     definedCenters: [...definedCenters],
     undefinedCenters,
+    openCenterFlavor,
     definitionComponents: components.map((c) => [...c]),
     definition: definitionLabel,
     definitionText: DEFINITION_INFO[definitionLabel],

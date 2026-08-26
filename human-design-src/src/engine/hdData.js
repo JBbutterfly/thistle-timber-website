@@ -159,6 +159,25 @@ export function crossAngle(profile) {
   return "Unknown";
 }
 
+// Full per-profile narratives — how the two line archetypes combine into a
+// distinct life angle. Original writing, grounded in standard Human Design
+// line theory (each line's core archetype is stable across HD literature;
+// the specific combinations below are this app's own phrasing).
+export const PROFILE_NARRATIVES = {
+  "1/3": "A foundation built by trial and error. You study a subject until you actually know it from the ground up, but the real learning only ever lands through direct experience — including the mistakes. What looks like chaos from outside is the method: you have to personally find out what breaks before you trust what holds.",
+  "1/4": "A deep personal foundation, shared through a fixed circle. You need to feel genuinely solid in what you know before you'll put it forward, and once you do, it travels through relationships and friendships one at a time rather than broadcast to a crowd. Your influence is real, but it's local.",
+  "2/4": "A natural gift that needs solitude to develop, shared through the people already close to you. You do your best work away from an audience, and you're most effective when actually called out by the right invitation rather than pushing yourself forward. Once called out, your circle of relationships is how the gift moves.",
+  "2/5": "A hidden natural talent that gets pulled into public view anyway. Other people project onto you — deciding you're the fix for something — often before you've volunteered or feel ready. The tension of this profile is real: protect the solitude the gift needs, while managing a visibility you didn't fully choose.",
+  "3/5": "A resilient, battle-tested pragmatist that other people look to for answers. You learn everything the hard way, through direct trial and error, and you also carry the weight of other people's projections that you have the fix for their problem. It works when what you're offering has actually been tested. It doesn't when it hasn't.",
+  "3/6": "A life in three phases, grounded in hard experience. Like all sixth-line profiles you move through a trial phase (roughly the first three decades), a rooftop phase of stepping back to observe, and a phase of living as an example — but your trial phase, true to the 3, is built entirely on direct experimentation rather than theory.",
+  "4/6": "A life in three phases, carried through relationships. Your influence travels through a fixed network of friendships, and — like every 6 — you move through trial, rooftop, and lived-example phases across the decades. Earlier years can look more experimental than the line number suggests; by midlife, you're a trusted example within your own circle.",
+  "4/1": "A fixed circle, built on real depth — the single Juxtaposition profile, meaning this pairing doesn't rotate through the usual angles the way the other eleven do. Your influence stays close to home rather than reaching wide, and underneath it sits a foundation you've actually researched and earned, not borrowed.",
+  "5/1": "A practical fixer, seen before known. People decide you have the answer to something from the first encounter, often before you've done anything to earn it — that's the projection this line carries. It becomes a real asset when you're standing on genuine, deeply researched competence, and painful when you're pulled into a fit that was never actually yours to fill.",
+  "5/2": "A natural gift, pulled into the spotlight. You carry the same projection-field pressure as any 5 — people deciding you're the answer before you've said a word — while also needing real retreat to keep the hidden talent underneath it actually working. Managing visibility you didn't ask for is the ongoing lesson.",
+  "6/2": "A life in three phases, built on a gift that needs to be invited out. Like every 6, you move through trial, rooftop, and lived-example years — but the rooftop phase matters more for you than most, since a 2's gift needs real withdrawal to develop before it can be modeled authentically for anyone else.",
+  "6/3": "A life in three phases, and what's being modeled is hard-won. Your trial years, true to the 3, run on direct experimentation and real mistakes rather than theory — so by the time the role-model years arrive, what you're offering other people is tested resilience, not an untested ideal.",
+};
+
 // Line keynotes (the 6 lines, generic across all gates)
 export const LINE_KEYNOTES = {
   1: "Investigator — needs a firm foundation; studies before acting.",
@@ -225,6 +244,16 @@ export const TYPE_INFO = {
     population: "~9%",
     summary:
       "Built to initiate. Manifestors are here to start things independently — the friction in their lives usually comes from not telling the people they impact before they act.",
+    onTrack:
+      "You tell the people your action will touch what's about to happen, before it happens — not to ask permission, just so nobody's blindsided. Told in advance, most resistance never shows up in the first place.",
+    offTrack:
+      "You act first and explain later, if at all, and then can't understand why everyone around you keeps bracing for impact. The anger of an off-track Manifestor is usually the anger of being managed and controlled by people who never got the heads-up that would have let them relax.",
+    notSelfTalk: [
+      "Why does everyone need a status update from me",
+      "I don't owe anyone an explanation",
+      "I'll just do it and deal with the reaction after",
+      "If I tell them first, they'll only try to stop me",
+    ],
   },
   Generator: {
     strategy: "Respond",
@@ -233,6 +262,16 @@ export const TYPE_INFO = {
     population: "~37%",
     summary:
       "Built with sustainable life-force energy, but not to initiate. Generators thrive by responding to what's in front of them rather than pushing to make things happen.",
+    onTrack:
+      "You wait for something real to respond to — a question, an opportunity, a person, a task actually in front of you — and let your gut's yes or no decide, rather than going out and manufacturing a plan from your head.",
+    offTrack:
+      "You initiate out of impatience, saying yes to things before your body has actually responded, because waiting feels like doing nothing. The frustration that follows isn't about the work — it's the tell that you're running your own initiative instead of a real response.",
+    notSelfTalk: [
+      "I guess I'll just do it myself, nobody else will",
+      "This doesn't feel right but I'll push through anyway",
+      "I keep saying yes to things I don't actually want",
+      "Why does nothing ever feel satisfying, even when it works out",
+    ],
   },
   "Manifesting Generator": {
     strategy: "Respond, then inform",
@@ -241,6 +280,16 @@ export const TYPE_INFO = {
     population: "~33%",
     summary:
       "A faster, multi-track Generator. Still here to respond, not initiate — but once in motion, moves, skips steps, and juggles more than a Generator, and does best informing others once committed.",
+    onTrack:
+      "You respond first, same as any Generator, but move fast once you do — skipping steps that don't matter, running more than one thing at a time — and you let people know once you're actually in motion, so the speed doesn't blindside them.",
+    offTrack:
+      "You skip the response and jump straight to initiating because waiting feels unbearably slow, then wonder why the thing you rushed into doesn't fit. The frustration compounds with impatience — a distinctly Manifesting Generator flavor of stuck.",
+    notSelfTalk: [
+      "I don't have time to wait for this, I'll just start",
+      "I already know how this turns out, why bother with the steps",
+      "I said yes before I even checked if I wanted it",
+      "Everyone else is just too slow",
+    ],
   },
   Projector: {
     strategy: "Wait for the invitation",
@@ -249,6 +298,16 @@ export const TYPE_INFO = {
     population: "~20%",
     summary:
       "Built to guide, focus, and see others clearly — not to grind out sustained energy. Projectors thrive when recognized and invited into the right roles, and burn out trying to keep pace with Generator energy.",
+    onTrack:
+      "You let your insight into other people and systems be recognized before you offer it deeply — into a role, a relationship, a piece of real guidance — rather than pushing it on people who haven't asked. Recognition is what opens the door efficiency alone can't.",
+    offTrack:
+      "You push your insight on people who haven't invited it, work twice as hard as your energy supports to prove your value, and end up resentful that the effort isn't being seen or rewarded the way it would be for a Generator. That resentment is the signature, not a character flaw.",
+    notSelfTalk: [
+      "Why does no one recognize what I actually bring",
+      "Nobody's going to invite me, I'll have to push my way in",
+      "I'm doing all the work here and getting none of the credit",
+      "I have to prove myself before anyone will listen to me",
+    ],
   },
   Reflector: {
     strategy: "Wait a full lunar cycle",
@@ -257,6 +316,16 @@ export const TYPE_INFO = {
     population: "~1%",
     summary:
       "Rare and entirely open in every center. Reflectors are mirrors and barometers for the health of the people and communities around them, and need real time — a full moon cycle — before committing to big decisions.",
+    onTrack:
+      "You give a big decision the full ~28 days it needs, talking it through with different trusted people across different phases of the Moon, and let the decision clarify slowly rather than forcing an answer today.",
+    offTrack:
+      "You decide fast to match everyone else's pace, or to end the discomfort of not-knowing, and then the ground shifts under a choice that was never actually settled. Disappointment here is usually the cost of skipping the wait, not a sign that nothing will ever feel right.",
+    notSelfTalk: [
+      "This should have felt clear by now",
+      "Everyone else decides so fast, why can't I",
+      "Maybe I'm just too sensitive for this",
+      "I keep hoping today will finally be the day it feels obvious",
+    ],
   },
 };
 

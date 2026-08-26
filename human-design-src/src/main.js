@@ -6,7 +6,8 @@ import { computeNatalAstrology } from "./engine/astrology.js";
 import { searchPlaces, localToUtc, formatOffset } from "./engine/geocode.js";
 import { renderBodyGraphSvg, COLOR_PERSONALITY, COLOR_DESIGN, COLOR_BOTH } from "./ui/bodygraph.js";
 import { GATE_NAMES } from "./engine/gateNames.js";
-import { CENTER_DESCRIPTIONS, CENTERS, LINE_KEYNOTES } from "./engine/hdData.js";
+import { CENTER_DESCRIPTIONS, CENTERS, LINE_KEYNOTES, PROFILE_NARRATIVES } from "./engine/hdData.js";
+import { CENTER_NARRATIVES } from "./engine/centerNarratives.js";
 import {
   computeGroupComposite,
   centerDefinitionTally,
@@ -348,6 +349,59 @@ function renderPersonView(id) {
     })
     .join("");
 
+  const bulletList = (items) => `<ul style="margin:6px 0 0;padding-left:1.2em">${items.map((i) => `<li style="margin-bottom:3px">${esc(i)}</li>`).join("")}</ul>`;
+
+  const typeDepthHtml = `
+    <div class="card" style="margin-bottom:16px">
+      <span class="eyebrow">${chart.type} — In Depth</span>
+      <p><strong>On track:</strong> ${esc(chart.typeInfo.onTrack)}</p>
+      <p><strong>Off track:</strong> ${esc(chart.typeInfo.offTrack)}</p>
+      <p class="disclaimer" style="margin-bottom:4px"><strong>What the ${esc(chart.typeInfo.notSelfTheme)} talk sounds like:</strong></p>
+      ${bulletList(chart.typeInfo.notSelfTalk)}
+    </div>`;
+
+  const profileNarrative = PROFILE_NARRATIVES[chart.profile];
+  const profileDepthHtml = profileNarrative
+    ? `<div class="card" style="margin-bottom:16px"><span class="eyebrow">Profile ${chart.profile} — ${esc(chart.incarnationCross.profileName)}</span><p style="margin-bottom:0">${esc(profileNarrative)}</p></div>`
+    : "";
+
+  const centerDepthCard = (center) => {
+    const isDefined = chart.definedCenters.includes(center);
+    const narrative = CENTER_NARRATIVES[center];
+    if (!narrative) return "";
+    if (isDefined) {
+      const d = narrative.defined;
+      return `<div class="card" style="margin-bottom:12px">
+        <span class="eyebrow">${esc(center)} — Defined</span>
+        <p>${esc(d.summary)}</p>
+        <p><strong>Well expressed:</strong> ${esc(d.wellExpressed)}</p>
+        <p style="margin-bottom:0"><strong>Under pressure:</strong> ${esc(d.underPressure)}</p>
+      </div>`;
+    }
+    const o = narrative.open;
+    const flavor = chart.openCenterFlavor?.[center];
+    const flavorNote =
+      flavor?.kind === "flavored"
+        ? `<p class="disclaimer">Gate${flavor.gates.length > 1 ? "s" : ""} ${flavor.gates.map((g) => `${g} (${esc(GATE_NAMES[g]?.[0] ?? "")})`).join(", ")} ${flavor.gates.length > 1 ? "are" : "is"} active here without ${flavor.gates.length > 1 ? "their" : "its"} channel partner — this open center carries a specific flavor rather than being a total blank.</p>`
+        : `<p class="disclaimer">No gate at all is active here — completely open, with no built-in filter whatsoever on this theme.</p>`;
+    return `<div class="card" style="margin-bottom:12px">
+      <span class="eyebrow">${esc(center)} — Open</span>
+      <p>${esc(o.summary)}</p>
+      ${flavorNote}
+      <p class="disclaimer" style="margin-bottom:4px"><strong>Not-Self Theme:</strong> ${esc(o.notSelfTheme)}</p>
+      ${bulletList(o.notSelfTalk)}
+      <p style="margin:10px 0 0"><strong>Reflection:</strong> ${esc(o.reflectionQuestion)}</p>
+      <p style="margin-bottom:0"><strong>The Gift:</strong> ${esc(o.gift)}</p>
+    </div>`;
+  };
+
+  const centersDepthHtml = [
+    ...chart.definedCenters.slice().sort(),
+    ...chart.undefinedCenters.slice().sort(),
+  ]
+    .map(centerDepthCard)
+    .join("");
+
   const channelsHtml = chart.formedChannels.length
     ? `<ul class="center-list">${chart.formedChannels.map((c) => `<li><span>${c.gates.join("-")} — ${esc(c.name)}</span><span class="disclaimer">${c.centers.join(" ↔ ")}</span></li>`).join("")}</ul>`
     : `<p class="disclaimer">No fully formed channels — every active gate is a "hanging gate," waiting for the matching gate from someone else to complete a circuit.</p>`;
@@ -436,6 +490,13 @@ function renderPersonView(id) {
       <div class="card"><span class="eyebrow">Personality — Conscious</span>${activePointsTable("personality")}</div>
       <div class="card"><span class="eyebrow">Design — Unconscious</span>${activePointsTable("design")}</div>
     </div>
+
+    <hr class="rule">
+    <span class="eyebrow">In Depth</span>
+    <h2>${esc(person.name)}'s Type, Profile &amp; Centers</h2>
+    ${typeDepthHtml}
+    ${profileDepthHtml}
+    <div class="grid grid-2">${centersDepthHtml}</div>
 
     <hr class="rule">
     <span class="eyebrow">Astrology Snapshot</span>
