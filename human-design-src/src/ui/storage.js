@@ -12,11 +12,11 @@
 // listener, so callers never have to await a read.
 // ─────────────────────────────────────────────────────────────────────────
 import { firebaseConfig, isFirebaseConfigured } from "../firebaseConfig.js";
-import { SEED_PEOPLE } from "../data/seedPeople.js";
+import { SEED_PEOPLE, SEED_CIRCLES } from "../data/seedPeople.js";
 
 const PEOPLE_KEY = "tt-hd:people:v1";
 const CIRCLES_KEY = "tt-hd:circles:v1";
-const SEEDED_KEY = "tt-hd:seeded:v1";
+const SEEDED_IDS_KEY = "tt-hd:seeded-ids:v1"; // ids ever offered by a seed, so a deletion always sticks
 
 export function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -163,18 +163,42 @@ export function getCircle(id) {
   return getCircles().find((c) => c.id === id) ?? null;
 }
 
-// Adds the starter records into local storage, once, on a browser that's
-// never seen them — never touches Firestore. Runs exactly once per browser
-// (tracked by SEEDED_KEY) so deleting a seeded person later actually sticks
-// instead of it reappearing on the next visit.
+// Adds any starter records/circles this browser has never been offered
+// before, into local storage only — never touches Firestore. Each seed id
+// is only ever added once: recorded permanently in SEEDED_IDS_KEY the first
+// time it's offered, so deleting a seeded person (or adding new seed people
+// in a later update) both behave correctly — a deletion always sticks, and
+// a newly-added seed person still shows up for someone who already has the
+// older ones.
 function seedLocalPeopleIfNeeded() {
-  if (localStorage.getItem(SEEDED_KEY)) return;
-  localStorage.setItem(SEEDED_KEY, "1");
-  const existingIds = new Set(peopleCache.map((p) => p.id));
-  const missing = SEED_PEOPLE.filter((p) => !existingIds.has(p.id));
-  if (!missing.length) return;
-  peopleCache = [...peopleCache, ...missing];
-  writeLocal(PEOPLE_KEY, peopleCache);
+  let everSeeded;
+  try {
+    everSeeded = new Set(JSON.parse(localStorage.getItem(SEEDED_IDS_KEY) ?? "[]"));
+  } catch {
+    everSeeded = new Set();
+  }
+
+  const newPeople = SEED_PEOPLE.filter((p) => !everSeeded.has(p.id));
+  const existingPeopleIds = new Set(peopleCache.map((p) => p.id));
+  const peopleToAdd = newPeople.filter((p) => !existingPeopleIds.has(p.id));
+  if (peopleToAdd.length) {
+    peopleCache = [...peopleCache, ...peopleToAdd];
+    writeLocal(PEOPLE_KEY, peopleCache);
+  }
+
+  const newCircles = SEED_CIRCLES.filter((c) => !everSeeded.has(c.id));
+  const existingCircleIds = new Set(circlesCache.map((c) => c.id));
+  const circlesToAdd = newCircles.filter((c) => !existingCircleIds.has(c.id));
+  if (circlesToAdd.length) {
+    circlesCache = [...circlesCache, ...circlesToAdd];
+    writeLocal(CIRCLES_KEY, circlesCache);
+  }
+
+  if (newPeople.length || newCircles.length) {
+    for (const p of newPeople) everSeeded.add(p.id);
+    for (const c of newCircles) everSeeded.add(c.id);
+    localStorage.setItem(SEEDED_IDS_KEY, JSON.stringify([...everSeeded]));
+  }
 }
 
 /**
