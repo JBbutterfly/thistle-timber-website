@@ -8,6 +8,8 @@ import { renderBodyGraphSvg, COLOR_PERSONALITY, COLOR_DESIGN, COLOR_BOTH } from 
 import { GATE_NAMES } from "./engine/gateNames.js";
 import { CENTER_DESCRIPTIONS, CENTERS, LINE_KEYNOTES, PROFILE_NARRATIVES } from "./engine/hdData.js";
 import { CENTER_NARRATIVES } from "./engine/centerNarratives.js";
+import { GATE_DESCRIPTIONS } from "./engine/gateDescriptions.js";
+import { CHANNEL_DESCRIPTIONS } from "./engine/channelDescriptions.js";
 import {
   computeGroupComposite,
   centerDefinitionTally,
@@ -406,6 +408,32 @@ function renderPersonView(id) {
     ? `<ul class="center-list">${chart.formedChannels.map((c) => `<li><span>${c.gates.join("-")} — ${esc(c.name)}</span><span class="disclaimer">${c.centers.join(" ↔ ")}</span></li>`).join("")}</ul>`
     : `<p class="disclaimer">No fully formed channels — every active gate is a "hanging gate," waiting for the matching gate from someone else to complete a circuit.</p>`;
 
+  const channelsDepthHtml = chart.formedChannels.length
+    ? chart.formedChannels
+        .map((c) => {
+          const key = c.gates.slice().sort((a, b) => a - b).join("-");
+          const desc = CHANNEL_DESCRIPTIONS[key];
+          return `<div class="card" style="margin-bottom:12px">
+            <span class="eyebrow">${c.gates.join("-")} — ${esc(c.name)} <span class="disclaimer">(${c.centers.join(" ↔ ")})</span></span>
+            <p style="margin-bottom:0">${esc(desc ?? "")}</p>
+          </div>`;
+        })
+        .join("")
+    : `<p class="disclaimer">No fully formed channels — every active gate here is a "hanging gate," waiting for the matching gate from someone else to complete a circuit between you.</p>`;
+
+  const gatesDepthHtml = chart.activeGates
+    .map((g) => {
+      const [name] = GATE_NAMES[g] ?? [];
+      const desc = GATE_DESCRIPTIONS[g];
+      const side = chart.gateSides[g];
+      const sideLabel = side?.personality && side?.design ? "Personality &amp; Design" : side?.personality ? "Personality" : "Design";
+      return `<div class="card" style="margin-bottom:12px">
+        <span class="eyebrow">Gate ${g} — ${esc(name ?? "")} <span class="disclaimer">(${sideLabel})</span></span>
+        <p style="margin-bottom:0">${esc(desc ?? "")}</p>
+      </div>`;
+    })
+    .join("");
+
   let astrologyHtml = `<p class="disclaimer">Add a birth location to see the astrology snapshot.</p>`;
   if (astrology) {
     const sun = astrology.placements.Sun;
@@ -497,6 +525,18 @@ function renderPersonView(id) {
     ${typeDepthHtml}
     ${profileDepthHtml}
     <div class="grid grid-2">${centersDepthHtml}</div>
+
+    <hr class="rule">
+    <span class="eyebrow">Section 7</span>
+    <h2>${esc(person.name)}'s Channels</h2>
+    <p>A channel forms when both of its gates are active — a live, consistent circuit connecting two centers. This is the energy ${esc(person.name)} carries reliably, not just on their good days.</p>
+    ${channelsDepthHtml}
+
+    <hr class="rule">
+    <span class="eyebrow">Section 8</span>
+    <h2>${esc(person.name)}'s Gates</h2>
+    <p>All ${chart.activeGates.length} of ${esc(person.name)}'s activated gates — the specific themes that make up their design, whether or not they've completed a channel yet.</p>
+    <div class="grid grid-2">${gatesDepthHtml}</div>
 
     <hr class="rule">
     <span class="eyebrow">Astrology Snapshot</span>
