@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task matrix</title>
+<style>
+  :root {
+    --paper: #F3F1E8;
+    --ink: #2B2A25;
+    --ink-soft: #6B6858;
+    --line: #D8D4C4;
+    --rust: #B5563A;
+    --rust-bg: #F2E2DC;
+    --moss: #5B7553;
+    --moss-bg: #E4EADF;
+    --ochre: #B07A24;
+    --ochre-bg: #F1E6D2;
+    --stone: #7A776C;
+    --stone-bg: #E7E5DC;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin: 0 0 4px;
+    letter-spacing: 0.2px;
+  }
+  .sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+  .entry {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 20px;
+  }
+  .entry input[type="text"] {
+    font-size: 15px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--paper);
+  }
+  .entry input[type="text"]:focus {
+    outline: 2px solid var(--ink-soft);
+    outline-offset: 1px;
+  }
+  .toggles {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .toggle-group {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    flex: 1;
+    min-width: 140px;
+  }
+  .toggle-group button {
+    flex: 1;
+    border: none;
+    background: #fff;
+    color: var(--ink-soft);
+    font-size: 13px;
+    padding: 8px 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .toggle-group button.active {
+    background: var(--ink);
+    color: #fff;
+  }
+  .toggle-group button:not(:last-child) {
+    border-right: 1px solid var(--line);
+  }
+  .add-btn {
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .add-btn:active { opacity: 0.85; }
+  .error {
+    font-size: 12px;
+    color: var(--rust);
+    display: none;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .quad {
+    border-radius: 6px;
+    padding: 12px 12px 6px;
+    min-height: 110px;
+  }
+  .quad.do { background: var(--rust-bg); }
+  .quad.schedule { background: var(--moss-bg); }
+  .quad.delegate { background: var(--ochre-bg); }
+  .quad.delete { background: var(--stone-bg); }
+  .quad h2 {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 2px;
+  }
+  .quad.do h2 { color: var(--rust); }
+  .quad.schedule h2 { color: var(--moss); }
+  .quad.delegate h2 { color: var(--ochre); }
+  .quad.delete h2 { color: var(--stone); }
+  .quad .desc {
+    font-size: 11px;
+    margin: 0 0 10px;
+  }
+  .quad.do .desc { color: #8A4029; }
+  .quad.schedule .desc { color: #45593F; }
+  .quad.delegate .desc { color: #86601C; }
+  .quad.delete .desc { color: #5E5C53; }
+  .task {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 13px;
+    padding: 4px 0;
+    line-height: 1.4;
+  }
+  .task input[type="checkbox"] {
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+  .task span {
+    flex: 1;
+    word-break: break-word;
+  }
+  .task.done span {
+    text-decoration: line-through;
+    color: var(--ink-soft);
+  }
+  .task button {
+    border: none;
+    background: none;
+    color: var(--ink-soft);
+    font-size: 15px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+  .empty {
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-style: italic;
+    padding: 4px 0;
+  }
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .actions button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  #exportBtn {
+    background: #fff;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+  }
+  #resetBtn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+  #exportOut {
+    display: none;
+    margin-top: 12px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .loading {
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding: 20px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Task matrix</h1>
+  <p class="sub">Add a task, mark it urgent and/or important, and it sorts itself. Export to paste into Obsidian.</p>
+
+  <div class="entry">
+    <input type="text" id="taskInput" placeholder="What needs doing?">
+    <div class="toggles">
+      <div class="toggle-group" id="urgentGroup">
+        <button data-val="true">Urgent</button>
+        <button data-val="false" class="active">Not urgent</button>
+      </div>
+      <div class="toggle-group" id="importantGroup">
+        <button data-val="true" class="active">Important</button>
+        <button data-val="false">Not important</button>
+      </div>
+    </div>
+    <span class="error" id="errorMsg">Enter a task first</span>
+    <button class="add-btn" id="addBtn">Add task</button>
+  </div>
+
+  <div id="loadingMsg" class="loading">Loading your tasks…</div>
+  <div class="grid" id="grid" style="display:none">
+    <div class="quad do">
+      <h2>Do now</h2>
+      <p class="desc">Urgent and important</p>
+      <div class="tasklist" id="list-do"></div>
+    </div>
+    <div class="quad schedule">
+      <h2>Schedule</h2>
+      <p class="desc">Important, not urgent</p>
+      <div class="tasklist" id="list-schedule"></div>
+    </div>
+    <div class="quad delegate">
+      <h2>Delegate</h2>
+      <p class="desc">Urgent, not important</p>
+      <div class="tasklist" id="list-delegate"></div>
+    </div>
+    <div class="quad delete">
+      <h2>Delete</h2>
+      <p class="desc">Neither</p>
+      <div class="tasklist" id="list-delete"></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="exportBtn">Export to Obsidian</button>
+    <button id="resetBtn">Clear all</button>
+  </div>
+  <div id="exportOut"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'eisenhower-tasks';
+let tasks = [];
+let urgentVal = false;
+let importantVal = true;
+
+function quadrantOf(t) {
+  if (t.urgent && t.important) return 'do';
+  if (!t.urgent && t.important) return 'schedule';
+  if (t.urgent && !t.important) return 'delegate';
+  return 'delete';
+}
+
+function render() {
+  const lists = { do: [], schedule: [], delegate: [], delete: [] };
+  tasks.forEach(t => lists[quadrantOf(t)].push(t));
+
+  Object.keys(lists).forEach(key => {
+    const el = document.getElementById('list-' + key);
+    el.innerHTML = '';
+    if (lists[key].length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'Nothing here';
+      el.appendChild(empty);
+      return;
+    }
+    lists[key].forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'task' + (t.done ? ' done' : '');
+      row.innerHTML = `
+        <input type="checkbox" ${t.done ? 'checked' : ''} data-id="${t.id}">
+        <span>${escapeHtml(t.text)}</span>
+        <button data-del="${t.id}" aria-label="Delete task">&times;</button>
+      `;
+      el.appendChild(row);
+    });
+  });
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function loadTasks() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    tasks = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    tasks = [];
+  }
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.getElementById('grid').style.display = 'grid';
+  render();
+}
+
+function saveTasks() {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  } catch (e) {
+    console.error('Could not save tasks', e);
+  }
+}
+
+document.getElementById('urgentGroup').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  urgentVal = btn.dataset.val === 'true';
+  [...btn.parentElement.children].forEach(b => b.classList.toggle('active', b === btn));
+});
+
+document.getElementById('importantGroup').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  importantVal = btn.dataset.val === 'true';
+  [...btn.parentElement.children].forEach(b => b.classList.toggle('active', b === btn));
+});
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const input = document.getElementById('taskInput');
+  const errorMsg = document.getElementById('errorMsg');
+  const text = input.value.trim();
+  if (!text) {
+    errorMsg.style.display = 'block';
+    return;
+  }
+  errorMsg.style.display = 'none';
+  tasks.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    text,
+    urgent: urgentVal,
+    important: importantVal,
+    done: false
+  });
+  input.value = '';
+  render();
+  saveTasks();
+});
+
+document.getElementById('taskInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('addBtn').click();
+  }
+});
+
+document.getElementById('taskInput').addEventListener('input', () => {
+  document.getElementById('errorMsg').style.display = 'none';
+});
+
+document.getElementById('grid').addEventListener('click', e => {
+  if (e.target.matches('input[type="checkbox"]')) {
+    const id = e.target.dataset.id;
+    const t = tasks.find(t => t.id === id);
+    if (t) t.done = e.target.checked;
+    render();
+    saveTasks();
+  } else if (e.target.matches('button[data-del]')) {
+    const id = e.target.dataset.del;
+    tasks = tasks.filter(t => t.id !== id);
+    render();
+    saveTasks();
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('Clear every task? This cannot be undone.')) return;
+  tasks = [];
+  render();
+  saveTasks();
+});
+
+function toObsidianMarkdown() {
+  const sections = [
+    { key: 'do', title: 'Do now', tags: '#urgent #important' },
+    { key: 'schedule', title: 'Schedule', tags: '#important' },
+    { key: 'delegate', title: 'Delegate', tags: '#urgent' },
+    { key: 'delete', title: 'Delete', tags: '' }
+  ];
+  const lists = { do: [], schedule: [], delegate: [], delete: [] };
+  tasks.forEach(t => lists[quadrantOf(t)].push(t));
+
+  let out = `# Task matrix — ${new Date().toISOString().slice(0, 10)}\n\n`;
+  sections.forEach(s => {
+    out += `## ${s.title}\n`;
+    if (lists[s.key].length === 0) {
+      out += '_Nothing here_\n\n';
+      return;
+    }
+    lists[s.key].forEach(t => {
+      const box = t.done ? '[x]' : '[ ]';
+      const tagStr = s.tags ? ` ${s.tags}` : '';
+      out += `- ${box} ${t.text}${tagStr}\n`;
+    });
+    out += '\n';
+  });
+  return out;
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const out = document.getElementById('exportOut');
+  out.textContent = toObsidianMarkdown();
+  out.style.display = 'block';
+});
+
+loadTasks();
+</script>
+</body>
+</html>
