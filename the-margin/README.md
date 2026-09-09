@@ -82,3 +82,39 @@ back at what you argued with over time.
 
 To change which model generates provocations, set `CLAUDE_MODEL` in
 `server/.env` (defaults to `claude-opus-5`).
+
+## Deploying somewhere real (e.g. to test on your phone)
+
+In production the Express server also serves the built frontend, so the whole
+app is one process and one URL — no separate dev servers. This works on any
+Node host; here's the free-tier path on [Render](https://render.com), doable
+entirely from a phone browser:
+
+1. **Sign up / log in at [render.com](https://render.com)** — GitHub login is
+   fastest.
+2. **New → Web Service**, then connect the `thistle-timber-website` repo
+   (grant Render access to it if asked).
+3. Fill in:
+   - **Branch:** `claude/margin-writing-app-bpv7ky` (or whatever branch you're
+     deploying)
+   - **Root Directory:** `the-margin`
+   - **Runtime:** Node
+   - **Build Command:**
+     `npm install --prefix server && npm install --prefix client && npm run build --prefix client`
+   - **Start Command:** `node server/index.js`
+   - **Instance Type:** Free
+4. Add environment variables (Render's dashboard, not in any file you commit):
+   - `ANTHROPIC_API_KEY` — your key
+   - `APP_USER` and `APP_PASSWORD` — pick any username/password. Since this
+     URL is reachable by anyone who has it, this puts a login prompt in front
+     of the whole app so a stray link can't run up your API bill. Leave both
+     unset only if you don't mind the URL being open.
+5. **Create Web Service.** First build takes a few minutes; after that you
+   get a `https://something.onrender.com` URL — open it on your phone.
+
+Caveats for this path: Render's free tier spins the service down after
+inactivity (the first request after a while takes ~30–50s to wake back up),
+and its disk isn't guaranteed to survive a redeploy — so treat drafts saved
+there as disposable while testing, not a permanent home. For real day-to-day
+use, running it locally (above) or deploying with a persistent disk/database
+is the better fit.

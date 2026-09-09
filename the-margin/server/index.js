@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import { randomUUID } from 'crypto';
 import {
   listDrafts,
@@ -12,11 +15,31 @@ import {
 } from './lib/db.js';
 import { generateProvocations } from './lib/provoke.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 5175;
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
+
+// Optional whole-app password gate — set APP_USER + APP_PASSWORD when this
+// server is reachable over the public internet (e.g. a hosted deployment for
+// testing) so a guessed/shared URL can't rack up API usage on your key.
+// Leave both unset for local-only use and no prompt appears.
+if (process.env.APP_USER && process.env.APP_PASSWORD) {
+  app.use((req, res, next) => {
+    const header = req.headers.authorization || '';
+    const [scheme, encoded] = header.split(' ');
+    if (scheme === 'Basic' && encoded) {
+      const [user, pass] = Buffer.from(encoded, 'base64').toString().split(':');
+      if (user === process.env.APP_USER && pass === process.env.APP_PASSWORD) {
+        return next();
+      }
+    }
+    res.set('WWW-Authenticate', 'Basic realm="The Margin"');
+    res.status(401).send('Authentication required.');
+  });
+}
 
 app.get('/api/drafts', async (req, res) => {
   const drafts = await listDrafts();
@@ -120,6 +143,16 @@ app.get('/api/history', async (req, res) => {
   const entries = await listRespondedProvocations();
   res.json(entries);
 });
+
+// In production there's no separate Vite dev server — this process serves
+// the built frontend too, so a host only needs to run one service.
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
+if (existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get(/^(?!\/api\/).*/, (req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`The Margin server listening on http://localhost:${PORT}`);
