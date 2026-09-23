@@ -1,0 +1,7 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+httpx>=0.27
+pillow>=10
+zxing-cpp>=2.2
+anthropic>=1.0,<2  # structured outputs (output_config) need 1.x

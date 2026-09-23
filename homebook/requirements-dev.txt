@@ -1,0 +1,3 @@
+-r requirements.txt
+pytest>=8
+python-barcode>=0.15
