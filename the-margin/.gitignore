@@ -1,6 +1,5 @@
 node_modules/
 .env
-server/data/drafts/*.json
-!server/data/drafts/.gitkeep
 dist/
 .DS_Store
+server/firebase-service-account.json

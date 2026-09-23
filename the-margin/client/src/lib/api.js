@@ -1,8 +1,11 @@
-async function request(path, options) {
-  const res = await fetch(`/api${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
+import { getIdToken } from './firebase.js';
+
+async function request(path, options = {}) {
+  const token = await getIdToken();
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`/api${path}`, { ...options, headers });
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
     try {

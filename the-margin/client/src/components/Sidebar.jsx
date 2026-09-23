@@ -12,6 +12,8 @@ export default function Sidebar({
   onNewDraft,
   onShowHistory,
   loadingDrafts,
+  userEmail,
+  onSignOut,
 }) {
   return (
     <aside className="sidebar">
@@ -54,6 +56,13 @@ export default function Sidebar({
           </li>
         ))}
       </ul>
+
+      <div className="sidebar-footer">
+        <div className="draft-meta" title={userEmail} style={{ marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {userEmail}
+        </div>
+        <button className="btn subtle" onClick={onSignOut}>Sign out</button>
+      </div>
     </aside>
   );
 }

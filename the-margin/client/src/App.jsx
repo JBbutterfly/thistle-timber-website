@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar.jsx';
 import Editor from './components/Editor.jsx';
 import HistoryView from './components/HistoryView.jsx';
+import Login from './components/Login.jsx';
 import { api } from './lib/api.js';
+import { watchAuthState, signOutUser } from './lib/firebase.js';
 
-export default function App() {
+function AuthedApp({ user }) {
   const [drafts, setDrafts] = useState([]);
   const [loadingDrafts, setLoadingDrafts] = useState(true);
   const [currentDraftId, setCurrentDraftId] = useState(null);
@@ -34,7 +36,7 @@ export default function App() {
       })
       .finally(() => setLoadingDrafts(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user.uid]);
 
   function handleSelectDraft(id) {
     setCurrentDraftId(id);
@@ -64,9 +66,11 @@ export default function App() {
         currentDraftId={currentDraftId}
         view={view}
         loadingDrafts={loadingDrafts}
+        userEmail={user.email}
         onSelectDraft={handleSelectDraft}
         onNewDraft={handleNewDraft}
         onShowHistory={() => setView('history')}
+        onSignOut={signOutUser}
       />
       <div className="main-area">
         {view === 'history' && <HistoryView onOpenDraft={handleOpenDraftFromHistory} />}
@@ -79,4 +83,20 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+export default function App() {
+  const [user, setUser] = useState(undefined); // undefined = still checking, null = signed out
+
+  useEffect(() => watchAuthState(setUser), []);
+
+  if (user === undefined) {
+    return null; // brief check on load; avoids a login-screen flash for already-signed-in users
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
+  return <AuthedApp user={user} />;
 }

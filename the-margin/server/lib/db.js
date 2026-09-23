@@ -1,17 +1,14 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
+import { getDb } from './firebaseAdmin.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, '..', 'data', 'drafts');
+// Every draft lives under users/{uid}/drafts/{draftId}, with its notes as a
+// plain array field on the draft doc (not a subcollection) — this app's
+// scale is "one person's drafts", not big data, so keeping the exact same
+// shape the old JSON-file version used means History can just read all of a
+// user's drafts and filter in memory, no composite index to set up.
 
-async function ensureDataDir() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-}
-
-function draftPath(id) {
-  return path.join(DATA_DIR, `${id}.json`);
+function draftsCol(uid) {
+  return getDb().collection('users').doc(uid).collection('drafts');
 }
 
 function firstLine(text) {
@@ -19,43 +16,31 @@ function firstLine(text) {
   return line ? line.trim().slice(0, 80) : 'Untitled draft';
 }
 
-export async function listDrafts() {
-  await ensureDataDir();
-  const files = await fs.readdir(DATA_DIR);
-  const drafts = [];
-  for (const file of files) {
-    if (!file.endsWith('.json')) continue;
-    const raw = await fs.readFile(path.join(DATA_DIR, file), 'utf-8');
-    const draft = JSON.parse(raw);
-    drafts.push({
-      id: draft.id,
-      title: draft.title,
-      updatedAt: draft.updatedAt,
-      createdAt: draft.createdAt,
-      preview: (draft.text || '').trim().slice(0, 140),
-      noteCount: (draft.notes || []).length,
-    });
-  }
-  drafts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-  return drafts;
+export async function listDrafts(uid) {
+  const snap = await draftsCol(uid).orderBy('updatedAt', 'desc').get();
+  return snap.docs.map((doc) => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      title: d.title,
+      updatedAt: d.updatedAt,
+      createdAt: d.createdAt,
+      preview: (d.text || '').trim().slice(0, 140),
+      noteCount: (d.notes || []).length,
+    };
+  });
 }
 
-export async function getDraft(id) {
-  await ensureDataDir();
-  try {
-    const raw = await fs.readFile(draftPath(id), 'utf-8');
-    return JSON.parse(raw);
-  } catch (err) {
-    if (err.code === 'ENOENT') return null;
-    throw err;
-  }
+export async function getDraft(uid, id) {
+  const doc = await draftsCol(uid).doc(id).get();
+  if (!doc.exists) return null;
+  return { id: doc.id, ...doc.data() };
 }
 
-export async function createDraft({ title, text, audience } = {}) {
-  await ensureDataDir();
+export async function createDraft(uid, { title, text, audience } = {}) {
   const now = new Date().toISOString();
+  const id = randomUUID();
   const draft = {
-    id: randomUUID(),
     title: title || firstLine(text) || 'Untitled draft',
     text: text || '',
     audience: audience || 'general',
@@ -63,55 +48,46 @@ export async function createDraft({ title, text, audience } = {}) {
     createdAt: now,
     updatedAt: now,
   };
-  await fs.writeFile(draftPath(draft.id), JSON.stringify(draft, null, 2));
-  return draft;
+  await draftsCol(uid).doc(id).set(draft);
+  return { id, ...draft };
 }
 
-export async function saveDraft(id, updates) {
-  const existing = await getDraft(id);
-  if (!existing) return null;
+export async function saveDraft(uid, id, updates) {
+  const ref = draftsCol(uid).doc(id);
+  const existing = await ref.get();
+  if (!existing.exists) return null;
+  const existingData = existing.data();
 
-  const updated = {
-    ...existing,
-    ...updates,
-    id: existing.id,
-    createdAt: existing.createdAt,
-    updatedAt: new Date().toISOString(),
-  };
-
-  if (updates.text !== undefined && updates.title === undefined && !existing.titleSetByUser) {
-    updated.title = firstLine(updates.text) || 'Untitled draft';
+  const merged = { ...updates, updatedAt: new Date().toISOString() };
+  if (updates.text !== undefined && updates.title === undefined && !existingData.titleSetByUser) {
+    merged.title = firstLine(updates.text) || 'Untitled draft';
   }
 
-  await fs.writeFile(draftPath(id), JSON.stringify(updated, null, 2));
-  return updated;
+  await ref.set(merged, { merge: true });
+  const updatedDoc = await ref.get();
+  return { id, ...updatedDoc.data() };
 }
 
-export async function deleteDraft(id) {
-  try {
-    await fs.unlink(draftPath(id));
-    return true;
-  } catch (err) {
-    if (err.code === 'ENOENT') return false;
-    throw err;
-  }
+export async function deleteDraft(uid, id) {
+  const ref = draftsCol(uid).doc(id);
+  const existing = await ref.get();
+  if (!existing.exists) return false;
+  await ref.delete();
+  return true;
 }
 
-// Every provocation the user has expanded and written a private response to,
-// across every draft, oldest first — the raw material for the History view.
-export async function listRespondedProvocations() {
-  await ensureDataDir();
-  const files = await fs.readdir(DATA_DIR);
+// Every provocation this user has expanded and responded to, across every
+// one of their drafts, oldest first — the raw material for the History view.
+export async function listRespondedProvocations(uid) {
+  const snap = await draftsCol(uid).get();
   const entries = [];
 
-  for (const file of files) {
-    if (!file.endsWith('.json')) continue;
-    const raw = await fs.readFile(path.join(DATA_DIR, file), 'utf-8');
-    const draft = JSON.parse(raw);
+  snap.forEach((doc) => {
+    const draft = doc.data();
     for (const note of draft.notes || []) {
       if (note.response && note.response.trim() && note.respondedAt) {
         entries.push({
-          draftId: draft.id,
+          draftId: doc.id,
           draftTitle: draft.title,
           noteId: note.id,
           quote: note.quote,
@@ -122,7 +98,7 @@ export async function listRespondedProvocations() {
         });
       }
     }
-  }
+  });
 
   entries.sort((a, b) => new Date(a.respondedAt) - new Date(b.respondedAt));
   return entries;
