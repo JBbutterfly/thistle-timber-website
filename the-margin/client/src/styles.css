@@ -534,6 +534,30 @@ button {
 .login-card .brand { text-align: center; }
 .login-card .brand-sub { text-align: center; margin-bottom: 28px; }
 
+.google-btn {
+  width: 100%;
+  text-align: center;
+  padding: 10px 12px;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--faint-ink);
+}
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule-line);
+}
+
 .login-form {
   display: flex;
   flex-direction: column;

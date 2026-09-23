@@ -3,6 +3,8 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
@@ -28,6 +30,12 @@ export function signUp(email, password) {
 
 export function signIn(email, password) {
   return signInWithEmailAndPassword(auth, email, password);
+}
+
+const googleProvider = new GoogleAuthProvider();
+
+export function signInWithGoogle() {
+  return signInWithPopup(auth, googleProvider);
 }
 
 export function signOutUser() {

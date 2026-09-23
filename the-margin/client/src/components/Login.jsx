@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signIn, signUp, resetPassword } from '../lib/firebase.js';
+import { signIn, signUp, signInWithGoogle, resetPassword } from '../lib/firebase.js';
 
 function friendlyError(err) {
   const code = err && err.code;
@@ -9,6 +9,7 @@ function friendlyError(err) {
   if (code === 'auth/email-already-in-use') return 'An account already exists with that email — try signing in instead.';
   if (code === 'auth/weak-password') return 'Password needs to be at least 6 characters.';
   if (code === 'auth/invalid-email') return 'That doesn’t look like a valid email address.';
+  if (code === 'auth/popup-blocked') return 'Your browser blocked the sign-in popup — allow popups for this site and try again.';
   return (err && err.message) || 'Something went wrong. Try again.';
 }
 
@@ -53,11 +54,34 @@ export default function Login() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setError('');
+    setNotice('');
+    setBusy(true);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      if (err && (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request')) {
+        // The user just closed the popup — not worth showing as an error.
+      } else {
+        setError(friendlyError(err));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="login-screen">
       <div className="login-card">
         <h1 className="brand">The Margin</h1>
         <p className="brand-sub">a tool for thought</p>
+
+        <button className="btn google-btn" type="button" onClick={handleGoogleSignIn} disabled={busy}>
+          Continue with Google
+        </button>
+
+        <div className="login-divider"><span>or</span></div>
 
         <form onSubmit={handleSubmit} className="login-form">
           <label className="login-label" htmlFor="login-email">Email</label>
