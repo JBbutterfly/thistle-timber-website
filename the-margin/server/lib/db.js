@@ -51,13 +51,14 @@ export async function getDraft(id) {
   }
 }
 
-export async function createDraft({ title, text } = {}) {
+export async function createDraft({ title, text, audience } = {}) {
   await ensureDataDir();
   const now = new Date().toISOString();
   const draft = {
     id: randomUUID(),
     title: title || firstLine(text) || 'Untitled draft',
     text: text || '',
+    audience: audience || 'general',
     notes: [],
     createdAt: now,
     updatedAt: now,

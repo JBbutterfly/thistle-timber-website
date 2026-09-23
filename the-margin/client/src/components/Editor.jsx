@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { api } from '../lib/api.js';
 import { segmentText } from '../lib/textSegmentation.js';
 import { locateQuote } from '../lib/textMatch.js';
+import { AUDIENCES, DEFAULT_AUDIENCE_KEY } from '../lib/audiences.js';
 import MarginNote from './MarginNote.jsx';
 
 const MIRROR_STYLE_PROPS = [
@@ -56,6 +57,7 @@ export default function Editor({ draftId, onDraftSaved }) {
   const [draft, setDraft] = useState(null);
   const [text, setText] = useState('');
   const [title, setTitle] = useState('');
+  const [audience, setAudience] = useState(DEFAULT_AUDIENCE_KEY);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [provoking, setProvoking] = useState(false);
@@ -84,6 +86,7 @@ export default function Editor({ draftId, onDraftSaved }) {
         setDraft(d);
         setText(d.text || '');
         setTitle(d.title || '');
+        setAudience(d.audience || DEFAULT_AUDIENCE_KEY);
         setNotes(d.notes || []);
         loadedDraftIdRef.current = draftId;
         setSaveStatus('saved');
@@ -138,6 +141,14 @@ export default function Editor({ draftId, onDraftSaved }) {
     }
   }
 
+  function handleAudienceChange(e) {
+    const next = e.target.value;
+    setAudience(next);
+    if (loadedDraftIdRef.current === draftId) {
+      scheduleSave({ audience: next });
+    }
+  }
+
   async function handleProvoke() {
     if (!text.trim() || provoking) return;
     setProvoking(true);
@@ -145,7 +156,7 @@ export default function Editor({ draftId, onDraftSaved }) {
     setError('');
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     try {
-      const result = await api.provoke(draftId, text);
+      const result = await api.provoke(draftId, text, audience);
       setNotes((prev) => [...prev, ...result.notes]);
       setSaveStatus('saved');
       onDraftSaved && onDraftSaved(result.draft);
@@ -287,6 +298,18 @@ export default function Editor({ draftId, onDraftSaved }) {
           onChange={handleTitleChange}
           placeholder="Untitled draft"
         />
+        <select
+          className="audience-select"
+          value={audience}
+          onChange={handleAudienceChange}
+          title="What kind of piece is this? Tunes what Provoke pushes on."
+        >
+          {AUDIENCES.map((a) => (
+            <option key={a.key} value={a.key}>
+              {a.label}
+            </option>
+          ))}
+        </select>
         <div className="topbar-actions">
           {error && <span className="topbar-status" style={{ color: 'var(--margin-ink)' }}>{error}</span>}
           <span className="topbar-status">

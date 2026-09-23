@@ -13,6 +13,14 @@ sentence it quotes. You can dismiss a note, or expand it to write a private
 response — that response is saved locally and is **never** sent back to Claude.
 It's for your own reflection, not a reply to the model.
 
+Before writing, you pick what kind of piece this is — academic, business,
+fiction, journalism, personal essay, or general — from the dropdown in the
+topbar. That choice tunes what the annotator pushes on (evidence and rigor for
+academic writing, whether a decision is actually clear for a business memo,
+earned stakes for fiction, and so on) instead of one generic critique style
+for everything. It's saved per draft and can be changed anytime before
+pressing Provoke.
+
 ## How it's built
 
 - `server/` — a small Express server. It's the only thing that talks to the

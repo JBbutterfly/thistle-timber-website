@@ -47,8 +47,8 @@ app.get('/api/drafts', async (req, res) => {
 });
 
 app.post('/api/drafts', async (req, res) => {
-  const { title, text } = req.body || {};
-  const draft = await createDraft({ title, text });
+  const { title, text, audience } = req.body || {};
+  const draft = await createDraft({ title, text, audience });
   res.status(201).json(draft);
 });
 
@@ -59,13 +59,14 @@ app.get('/api/drafts/:id', async (req, res) => {
 });
 
 app.put('/api/drafts/:id', async (req, res) => {
-  const { text, title } = req.body || {};
+  const { text, title, audience } = req.body || {};
   const updates = {};
   if (text !== undefined) updates.text = text;
   if (title !== undefined) {
     updates.title = title;
     updates.titleSetByUser = true;
   }
+  if (audience !== undefined) updates.audience = audience;
   const draft = await saveDraft(req.params.id, updates);
   if (!draft) return res.status(404).json({ error: 'Draft not found' });
   res.json(draft);
@@ -84,9 +85,11 @@ app.post('/api/drafts/:id/provoke', async (req, res) => {
   if (!draft) return res.status(404).json({ error: 'Draft not found' });
 
   const text = req.body && typeof req.body.text === 'string' ? req.body.text : draft.text;
+  const audience =
+    req.body && typeof req.body.audience === 'string' ? req.body.audience : draft.audience;
 
   try {
-    const provocations = await generateProvocations(text);
+    const provocations = await generateProvocations(text, audience);
     const now = new Date().toISOString();
     const newNotes = provocations.map((p) => ({
       id: randomUUID(),
@@ -103,6 +106,7 @@ app.post('/api/drafts/:id/provoke', async (req, res) => {
 
     const updatedDraft = await saveDraft(draft.id, {
       text,
+      audience,
       notes: [...(draft.notes || []), ...newNotes],
     });
 

@@ -23,7 +23,8 @@ export const api = {
   getDraft: (id) => request(`/drafts/${id}`),
   saveDraft: (id, updates) => request(`/drafts/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
   deleteDraft: (id) => request(`/drafts/${id}`, { method: 'DELETE' }),
-  provoke: (id, text) => request(`/drafts/${id}/provoke`, { method: 'POST', body: JSON.stringify({ text }) }),
+  provoke: (id, text, audience) =>
+    request(`/drafts/${id}/provoke`, { method: 'POST', body: JSON.stringify({ text, audience }) }),
   updateNote: (draftId, noteId, updates) =>
     request(`/drafts/${draftId}/notes/${noteId}`, { method: 'PATCH', body: JSON.stringify(updates) }),
   getHistory: () => request('/history'),

@@ -3,12 +3,18 @@ import { z } from 'zod/v4';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { segmentText, renderSegmentedOutline } from './textSegmentation.js';
 import { locateQuote } from './textMatch.js';
+import { getAudience } from './audiences.js';
 
 const MODEL = process.env.CLAUDE_MODEL || 'claude-opus-5';
 
-const SYSTEM_PROMPT = `You read manuscripts the way a sharp, skeptical margin annotator reads a student's thesis draft — not as an editor, not as a co-writer, and not as a cheerleader.
+function buildSystemPrompt(audienceKey) {
+  const audience = getAudience(audienceKey);
 
-Your only job: find 1 to 3 places where the writing is coasting — an unexamined assumption, a gap in the reasoning, a counterargument the writer hasn't considered, a claim resting on a familiar idea instead of the writer's own thinking — and challenge it directly.
+  return `You read manuscripts the way a sharp, skeptical margin annotator reads a student's thesis draft — not as an editor, not as a co-writer, and not as a cheerleader.
+
+Your only job: find 1 to 3 places where the writing is coasting, and challenge it directly.
+
+The writer has told you what this piece is: ${audience.label}. ${audience.focus}
 
 Strict rules:
 - Never complete a sentence, suggest a rewrite, or offer "a better version" of anything.
@@ -19,6 +25,7 @@ Strict rules:
 - If the draft does not yet warrant a real challenge, return zero provocations. Do not manufacture filler to hit a quota. Fewer or none is a correct answer.
 
 You will be shown the draft broken into numbered sentences like "[P0S1] text". For each provocation, cite the sentence id it targets when the quote falls entirely within one sentence; if it spans more than one, omit the sentence id.`;
+}
 
 const ProvocationSchema = z.object({
   provocations: z
@@ -46,7 +53,7 @@ function buildClient() {
   return new Anthropic();
 }
 
-export async function generateProvocations(text) {
+export async function generateProvocations(text, audienceKey) {
   const trimmed = (text || '').trim();
   if (!trimmed) return [];
 
@@ -58,7 +65,7 @@ export async function generateProvocations(text) {
   const response = await client.messages.parse({
     model: MODEL,
     max_tokens: 4096,
-    system: SYSTEM_PROMPT,
+    system: buildSystemPrompt(audienceKey),
     messages: [
       {
         role: 'user',
