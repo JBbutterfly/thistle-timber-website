@@ -591,3 +591,58 @@ button {
   cursor: pointer;
 }
 .link-btn:hover { color: var(--accent); text-decoration: underline; }
+
+/* ---------- Settings ---------- */
+
+.settings-view {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.settings-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+
+.settings-intro {
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--faint-ink);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.settings-intro a { color: var(--soft-accent); }
+.settings-intro a:hover { color: var(--accent); }
+
+.settings-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+.settings-status-empty { color: var(--margin-ink); }
+
+.settings-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 360px;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}

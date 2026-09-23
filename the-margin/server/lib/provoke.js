@@ -44,23 +44,39 @@ const ProvocationSchema = z.object({
     .max(3),
 });
 
-function buildClient() {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error(
-      'ANTHROPIC_API_KEY is not set. Copy server/.env.example to server/.env and add your key from https://console.anthropic.com/settings/keys'
-    );
+function buildClient(apiKey) {
+  const key = apiKey || process.env.ANTHROPIC_API_KEY;
+  if (!key) {
+    throw new NoApiKeyError();
   }
-  return new Anthropic();
+  return new Anthropic({ apiKey: key });
 }
 
-export async function generateProvocations(text, audienceKey) {
+// Distinct from a "your key doesn't work" error from Anthropic itself — this
+// one means no key was ever configured, which is actionable in a specific
+// way (add one in Settings) rather than a generic failure message.
+export class NoApiKeyError extends Error {
+  constructor() {
+    super('No Anthropic API key configured. Add your own in Settings to use Provoke.');
+    this.name = 'NoApiKeyError';
+  }
+}
+
+// A cheap, no-token-cost call used to confirm a key actually works before
+// saving it, so a typo doesn't silently break Provoke until the user tries it.
+export async function validateApiKey(apiKey) {
+  const client = new Anthropic({ apiKey });
+  await client.models.retrieve(MODEL);
+}
+
+export async function generateProvocations(text, audienceKey, apiKey) {
   const trimmed = (text || '').trim();
   if (!trimmed) return [];
 
   const paragraphs = segmentText(text);
   const outline = renderSegmentedOutline(paragraphs);
 
-  const client = buildClient();
+  const client = buildClient(apiKey);
 
   const response = await client.messages.parse({
     model: MODEL,

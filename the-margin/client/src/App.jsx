@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar.jsx';
 import Editor from './components/Editor.jsx';
 import HistoryView from './components/HistoryView.jsx';
+import Settings from './components/Settings.jsx';
 import Login from './components/Login.jsx';
 import { api } from './lib/api.js';
 import { watchAuthState, signOutUser } from './lib/firebase.js';
@@ -70,10 +71,12 @@ function AuthedApp({ user }) {
         onSelectDraft={handleSelectDraft}
         onNewDraft={handleNewDraft}
         onShowHistory={() => setView('history')}
+        onShowSettings={() => setView('settings')}
         onSignOut={signOutUser}
       />
       <div className="main-area">
         {view === 'history' && <HistoryView onOpenDraft={handleOpenDraftFromHistory} />}
+        {view === 'settings' && <Settings />}
         {view === 'editor' && currentDraftId && (
           <Editor draftId={currentDraftId} onDraftSaved={handleDraftSaved} />
         )}

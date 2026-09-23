@@ -31,4 +31,7 @@ export const api = {
   updateNote: (draftId, noteId, updates) =>
     request(`/drafts/${draftId}/notes/${noteId}`, { method: 'PATCH', body: JSON.stringify(updates) }),
   getHistory: () => request('/history'),
+  getApiKeyStatus: () => request('/settings/anthropic-key'),
+  saveApiKey: (apiKey) => request('/settings/anthropic-key', { method: 'PUT', body: JSON.stringify({ apiKey }) }),
+  deleteApiKey: () => request('/settings/anthropic-key', { method: 'DELETE' }),
 };

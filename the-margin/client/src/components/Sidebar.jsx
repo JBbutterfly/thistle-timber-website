@@ -11,6 +11,7 @@ export default function Sidebar({
   onSelectDraft,
   onNewDraft,
   onShowHistory,
+  onShowSettings,
   loadingDrafts,
   userEmail,
   onSignOut,
@@ -31,6 +32,12 @@ export default function Sidebar({
           onClick={onShowHistory}
         >
           History of provocations
+        </button>
+        <button
+          className={`btn ${view === 'settings' ? 'primary' : ''}`}
+          onClick={onShowSettings}
+        >
+          API key
         </button>
       </div>
 

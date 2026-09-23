@@ -12,8 +12,12 @@ import {
   saveDraft,
   deleteDraft,
   listRespondedProvocations,
+  getAnthropicKeyRecord,
+  setAnthropicKeyRecord,
+  deleteAnthropicKeyRecord,
 } from './lib/db.js';
-import { generateProvocations } from './lib/provoke.js';
+import { generateProvocations, validateApiKey, NoApiKeyError } from './lib/provoke.js';
+import { encrypt, decrypt } from './lib/crypto.js';
 import { requireAuth } from './lib/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -76,7 +80,10 @@ app.post('/api/drafts/:id/provoke', async (req, res) => {
     req.body && typeof req.body.audience === 'string' ? req.body.audience : draft.audience;
 
   try {
-    const provocations = await generateProvocations(text, audience);
+    const keyRecord = await getAnthropicKeyRecord(req.uid);
+    const apiKey = keyRecord ? decrypt(keyRecord) : null;
+
+    const provocations = await generateProvocations(text, audience, apiKey);
     const now = new Date().toISOString();
     const newNotes = provocations.map((p) => ({
       id: randomUUID(),
@@ -100,7 +107,8 @@ app.post('/api/drafts/:id/provoke', async (req, res) => {
     res.json({ notes: newNotes, draft: updatedDraft });
   } catch (err) {
     console.error('provoke failed:', err);
-    res.status(500).json({ error: err.message || 'Failed to generate provocations' });
+    const status = err instanceof NoApiKeyError ? 400 : 500;
+    res.status(status).json({ error: err.message || 'Failed to generate provocations' });
   }
 });
 
@@ -135,6 +143,32 @@ app.get('/api/history', async (req, res) => {
   res.json(entries);
 });
 
+// The user's own Anthropic key — write-only from the client's perspective.
+// Once saved, the plaintext key is never sent back; only whether one exists.
+app.get('/api/settings/anthropic-key', async (req, res) => {
+  const record = await getAnthropicKeyRecord(req.uid);
+  res.json({ hasKey: Boolean(record) });
+});
+
+app.put('/api/settings/anthropic-key', async (req, res) => {
+  const apiKey = req.body && typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : '';
+  if (!apiKey) return res.status(400).json({ error: 'API key is required.' });
+
+  try {
+    await validateApiKey(apiKey);
+  } catch (err) {
+    return res.status(400).json({ error: "That key doesn't seem to work — double-check it and try again." });
+  }
+
+  await setAnthropicKeyRecord(req.uid, encrypt(apiKey));
+  res.json({ hasKey: true });
+});
+
+app.delete('/api/settings/anthropic-key', async (req, res) => {
+  await deleteAnthropicKeyRecord(req.uid);
+  res.json({ hasKey: false });
+});
+
 // In production there's no separate Vite dev server — this process serves
 // the built frontend too (including the login screen), so a host only needs
 // to run one service. Intentionally not behind requireAuth: a signed-out
@@ -151,7 +185,14 @@ app.listen(PORT, () => {
   console.log(`The Margin server listening on http://localhost:${PORT}`);
   if (!process.env.ANTHROPIC_API_KEY) {
     console.warn(
-      'Warning: ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key before using "Provoke".'
+      'Note: ANTHROPIC_API_KEY is not set. That\'s fine if every user brings their own key in Settings — ' +
+        'it only matters as a fallback for accounts that haven\'t added one.'
+    );
+  }
+  if (!process.env.ENCRYPTION_KEY) {
+    console.warn(
+      'Warning: ENCRYPTION_KEY is not set. Saving a personal API key in Settings will fail until you set it ' +
+        '(generate one with `openssl rand -hex 32`).'
     );
   }
 });

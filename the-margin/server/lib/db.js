@@ -11,6 +11,10 @@ function draftsCol(uid) {
   return getDb().collection('users').doc(uid).collection('drafts');
 }
 
+function settingsDoc(uid, key) {
+  return getDb().collection('users').doc(uid).collection('settings').doc(key);
+}
+
 function firstLine(text) {
   const line = (text || '').split('\n').find((l) => l.trim().length > 0);
   return line ? line.trim().slice(0, 80) : 'Untitled draft';
@@ -102,4 +106,22 @@ export async function listRespondedProvocations(uid) {
 
   entries.sort((a, b) => new Date(a.respondedAt) - new Date(b.respondedAt));
   return entries;
+}
+
+// The user's own Anthropic key, stored encrypted (see lib/crypto.js) — never
+// the plaintext key itself.
+export async function getAnthropicKeyRecord(uid) {
+  const doc = await settingsDoc(uid, 'anthropic').get();
+  return doc.exists ? doc.data() : null;
+}
+
+export async function setAnthropicKeyRecord(uid, encryptedRecord) {
+  await settingsDoc(uid, 'anthropic').set({
+    ...encryptedRecord,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function deleteAnthropicKeyRecord(uid) {
+  await settingsDoc(uid, 'anthropic').delete();
 }

@@ -22,14 +22,18 @@ for everything. It's saved per draft and can be changed anytime before
 pressing Provoke.
 
 Each person signs in with their own email — every draft, note, and private
-response is scoped to their account and invisible to anyone else.
+response is scoped to their account and invisible to anyone else. Each person
+also brings their own Anthropic API key (added in **API key** in the
+sidebar): your writing and your usage are billed to your own account, never
+pooled through a shared key with other people's.
 
 ## How it's built
 
 - `server/` — a small Express server. It's the only thing that talks to the
-  Anthropic API (so the API key never touches the browser). Every request
-  carries a Firebase ID token; the server verifies it and reads/writes only
-  that user's own drafts in Firestore.
+  Anthropic API. Every request carries a Firebase ID token; the server
+  verifies it and reads/writes only that user's own drafts in Firestore. Each
+  user's own Anthropic key is stored encrypted (AES-256-GCM) and is only ever
+  decrypted server-side, in memory, for that user's own Provoke calls.
 - `client/` — a Vite + React frontend. Signed-out visitors see an email
   sign-up/sign-in screen (Firebase Auth); everything past that is the
   manuscript editor. The manuscript itself is a plain `<textarea>` (native
@@ -42,14 +46,11 @@ response is scoped to their account and invisible to anyone else.
 
 ## Setup
 
-You'll need Node 18+ and a (free) Firebase project.
+You'll need Node 18+ and a (free) Firebase project. You do **not** need an
+Anthropic key yourself to set this up — each user adds their own once signed
+in, from **API key** in the sidebar.
 
-### 1. Get an Anthropic API key
-
-Create one at [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
-(requires an Anthropic Console account with billing configured).
-
-### 2. Create a Firebase project
+### 1. Create a Firebase project
 
 1. Go to [console.firebase.google.com](https://console.firebase.google.com) → **Add project** → name it anything → skip Google Analytics (not needed).
 2. **Build → Authentication → Get started → Email/Password** → enable it (Sign-in method tab).
@@ -57,7 +58,7 @@ Create one at [console.anthropic.com/settings/keys](https://console.anthropic.co
 4. Get the **web app config** (for the frontend): Project settings (gear icon) → General → scroll to "Your apps" → click the `</>` (web) icon → register an app (no Hosting needed) → copy the `firebaseConfig` values shown.
 5. Get a **service account key** (for the server): Project settings → **Service accounts** → **Generate new private key** → save the downloaded JSON file somewhere outside version control, e.g. `server/firebase-service-account.json` (already gitignored).
 
-### 3. Configure the server
+### 2. Configure the server
 
 ```bash
 cd server
@@ -65,27 +66,28 @@ cp .env.example .env
 ```
 
 Edit `.env`:
-- `ANTHROPIC_API_KEY` — the key from step 1.
-- `GOOGLE_APPLICATION_CREDENTIALS` — path to the service-account JSON from step 2.5 (the default in `.env.example` already points at `./firebase-service-account.json`).
+- `ENCRYPTION_KEY` — run `openssl rand -hex 32` and paste the output. This encrypts each user's saved Anthropic key at rest; without it, saving a key in Settings will fail.
+- `GOOGLE_APPLICATION_CREDENTIALS` — path to the service-account JSON from step 1.5 (the default in `.env.example` already points at `./firebase-service-account.json`).
+- `ANTHROPIC_API_KEY` — optional. Only used as a fallback for an account that hasn't added its own key yet; leave it unset if you want BYOK to be the only path.
 
 ```bash
 npm install
 ```
 
-### 4. Configure the frontend
+### 3. Configure the frontend
 
 ```bash
 cd ../client
 cp .env.example .env
 ```
 
-Edit `.env` and fill in the four `VITE_FIREBASE_*` values from step 2.4 (these are public by design — the real security boundary is the server verifying each request's token, not secrecy of these values).
+Edit `.env` and fill in the four `VITE_FIREBASE_*` values from step 1.4 (these are public by design — the real security boundary is the server verifying each request's token, not secrecy of these values).
 
 ```bash
 npm install
 ```
 
-### 5. Run both
+### 4. Run both
 
 In one terminal:
 
@@ -101,7 +103,7 @@ cd client
 npm run dev      # http://localhost:5174
 ```
 
-Open http://localhost:5174, create an account with any email/password, and start writing. The Vite dev server proxies `/api/*` to the Express server, so the browser never sees your Anthropic key.
+Open http://localhost:5174, create an account with any email/password, add your Anthropic key under **API key** in the sidebar, and start writing. The Vite dev server proxies `/api/*` to the Express server, so the browser never sees anyone's key.
 
 ## Notes on persistence
 
@@ -115,6 +117,16 @@ can look back at what you argued with over time.
 
 To change which model generates provocations, set `CLAUDE_MODEL` in
 `server/.env` (defaults to `claude-opus-5`).
+
+## Notes on API keys
+
+Each user's Anthropic key is encrypted (AES-256-GCM) with a server-side master
+key (`ENCRYPTION_KEY`) before being stored in Firestore, and is only ever
+decrypted in memory, server-side, for that one user's own Provoke calls — it's
+never sent back to the browser once saved (Settings can only tell you whether
+a key exists, not what it is). A key is validated with a cheap, no-token-cost
+call before it's saved, so a typo is caught immediately instead of silently
+breaking Provoke later. Removing a key from Settings deletes it outright.
 
 ## Deploying somewhere real
 
@@ -136,11 +148,13 @@ free-tier path on [Render](https://render.com):
    - **Start Command:** `node server/index.js`
    - **Instance Type:** Free
 4. Add environment variables (Render's dashboard, not in any file you commit):
-   - `ANTHROPIC_API_KEY` — your key.
+   - `ENCRYPTION_KEY` — output of `openssl rand -hex 32`. Losing/rotating this
+     locks out everyone's saved keys, so keep it somewhere safe.
    - `FIREBASE_SERVICE_ACCOUNT_JSON` — paste the **entire contents** of the
      service-account JSON file as one value (Render doesn't support uploading
      a file, so this replaces `GOOGLE_APPLICATION_CREDENTIALS` for hosted
      deploys).
+   - `ANTHROPIC_API_KEY` — optional fallback; leave unset for BYOK-only.
 5. In the Firebase console, add your Render URL under **Authentication →
    Settings → Authorized domains**, or sign-in will be rejected from there.
 6. **Create Web Service.** First build takes a few minutes; after that you
